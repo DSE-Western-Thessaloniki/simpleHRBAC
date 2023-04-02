@@ -1,0 +1,20 @@
+{
+    "name": "dsewth/simple-hrbac",
+    "description": "Simple Hierarchical RBAC using MySQL/MariaDB",
+    "type": "library",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dsewth\\SimpleHrbac\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Theofilos Intzoglou",
+            "email": "int.teo@gmail.com"
+        }
+    ]
+}
