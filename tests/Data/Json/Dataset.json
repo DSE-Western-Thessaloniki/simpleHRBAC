@@ -1,0 +1,76 @@
+{
+	"$schema": "./Schema.json",
+	"Permissions": [
+		{
+			"id": 1,
+			"name": "Printing"
+		},
+		{
+			"id": 2,
+			"name": "Change Password"
+		},
+		{
+			"id": 3,
+			"name": "Create users"
+		}
+	],
+	"Roles": [
+		{
+			"id": 1,
+			"name": "root",
+			"children": [
+				2,
+				3,
+				4
+			]
+		},
+		{
+			"id": 2,
+			"name": "Administrator",
+			"description": "This is an administrator role",
+			"permissions": [
+				1,
+				2,
+				3
+			]
+		},
+		{
+			"id": 3,
+			"name": "IT Department",
+			"permissions": [
+				1
+			],
+			"children": [
+				4
+			]
+		},
+		{
+			"id": 4,
+			"name": "User",
+			"description": "This is a user role",
+			"parent": 1
+		}
+	],
+	"Subjects": [
+		{
+			"id": 1,
+			"name": "Bob",
+			"role": 4
+		},
+		{
+			"id": 2,
+			"name": "Alice",
+			"role": 2
+		},
+		{
+			"id": 3,
+			"name": "Carol",
+			"role": 3
+		},
+		{
+			"id": 4,
+			"name": "root",
+			"role": 1
+		}
+	]
+}
