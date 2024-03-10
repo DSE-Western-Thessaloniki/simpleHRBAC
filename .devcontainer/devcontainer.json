@@ -13,27 +13,7 @@
 	"forwardPorts": [
 		8080,
 		3306
-	],
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ikappas.composer",
-				"streetsidesoftware.code-spell-checker",
-				"mhutchie.git-graph",
-				"GitHub.vscode-pull-request-github",
-				"eamodio.gitlens",
-				"streetsidesoftware.code-spell-checker-greek",
-				"nhoizey.gremlins",
-				"RobertOstermann.inline-parameters-extended",
-				"Cardinal90.multi-cursor-case-preserve",
-				"christian-kohler.path-intellisense",
-				"MehediDracula.php-namespace-resolver",
-				"SonarSource.sonarlint-vscode",
-				"TabNine.tabnine-vscode",
-				"albert.TabOut"
-			]
-		}
-	}
+	]
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "sudo chmod a+x \"$(pwd)\" && sudo rm -rf /var/www/html && sudo ln -s \"$(pwd)\" /var/www/html"

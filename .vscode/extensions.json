@@ -1,0 +1,21 @@
+{
+	"recommendations": [
+		"streetsidesoftware.code-spell-checker",
+		"mhutchie.git-graph",
+		"GitHub.vscode-pull-request-github",
+		"eamodio.gitlens",
+		"streetsidesoftware.code-spell-checker-greek",
+		"nhoizey.gremlins",
+		"RobertOstermann.inline-parameters-extended",
+		"Cardinal90.multi-cursor-case-preserve",
+		"christian-kohler.path-intellisense",
+		"MehediDracula.php-namespace-resolver",
+		"SonarSource.sonarlint-vscode",
+		"TabNine.tabnine-vscode",
+		"albert.TabOut",
+		"DEVSENSE.composer-php-vscode",
+		"wongjn.php-sniffer",
+		"open-southeners.laravel-pint",
+		"m1guelpf.better-pest"
+	]
+}
