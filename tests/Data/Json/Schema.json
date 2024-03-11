@@ -95,19 +95,22 @@
 					"name": {
 						"type": "string"
 					},
-					"role": {
-						"type": [
-							"integer",
-							"string"
-						],
-						"description": "The Role id that applies to this subject"
+					"roles": {
+						"type": "array",
+						"description": "The Roles that apply to this subject",
+						"items": {
+							"type": [
+								"integer",
+								"string"
+							]
+						}
 					}
 				},
 				"additionalProperties": false,
 				"required": [
 					"id",
 					"name",
-					"role"
+					"roles"
 				]
 			}
 		}

@@ -10,7 +10,8 @@ class Subject
 
     private string $name = '';
 
-    private string|int $role = -1;
+    /** @var array<string|int> */
+    private array $roles = [];
 
     public function id(): string|int
     {
@@ -32,14 +33,24 @@ class Subject
         $this->name = $name;
     }
 
-    public function role(): string|int
+    /**
+     * Return the roles of the subject
+     *
+     * @return array<string|int>
+     */
+    public function roles(): array
     {
-        return $this->role;
+        return $this->roles;
     }
 
-    public function setRole(string|int $role): void
+    /**
+     * Set the roles of the subject
+     *
+     * @param  array<string|int>  $role
+     */
+    public function setRoles(array $role): void
     {
-        $this->role = $role;
+        $this->roles = [...$role];
     }
 
     public static function fromRow(array $row)
@@ -48,7 +59,7 @@ class Subject
 
         $instance->setId($row['id']);
         $instance->setName($row['name']);
-        $instance->setRole($row['role']);
+        $instance->setRoles($row['roles']);
 
         return $instance;
     }
@@ -68,7 +79,7 @@ class Subject
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'role_id' => $this->role,
+            'roles' => $this->roles,
         ];
     }
 }
