@@ -63,7 +63,7 @@ class RBAC
     {
         $result = array_map(function ($row) {
             return Permission::fromRow($row);
-        }, $this->db->getPermissions());
+        }, $this->db->permissions());
 
         return $result;
     }
@@ -77,7 +77,7 @@ class RBAC
     {
         $result = array_map(function ($row) {
             return Role::fromRow($row);
-        }, $this->db->getRoles());
+        }, $this->db->roles());
 
         return $result;
     }
@@ -91,14 +91,14 @@ class RBAC
     {
         $result = array_map(function ($row) {
             return Subject::fromRow($row);
-        }, $this->db->getSubjects());
+        }, $this->db->subjects());
 
         return $result;
     }
 
     public function getSubjectById(string|int $id): ?Subject
     {
-        $rows = $this->db->getSubjects(['id' => $id]);
+        $rows = $this->db->subjects(['id' => $id]);
 
         if (empty($rows)) {
             return null;
@@ -112,7 +112,7 @@ class RBAC
      */
     public function getSubjectsByName(string $name): array
     {
-        $rows = $this->db->getSubjects(['name' => ['like', $name]]);
+        $rows = $this->db->subjects(['name' => ['like', $name]]);
 
         return array_map(function ($row) {
             return Subject::fromRow($row);
