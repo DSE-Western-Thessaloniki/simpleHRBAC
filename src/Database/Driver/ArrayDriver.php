@@ -167,34 +167,77 @@ class ArrayDriver implements DriverInterface
         return $result;
     }
 
-    private function savePermission(array $fields): void
+    private function savePermission(array $fields)
     {
         $filtered = array_filter($fields, function ($field) {
             return in_array($field, ['id', 'name']);
-        });
+        }, ARRAY_FILTER_USE_KEY);
 
         $id = $filtered['id'];
-        if ($id === -1) {
+        if ($id === 0) {
             // Find the first available id
             $keys = array_keys($this->data['Permissions']);
-            if (is_int($keys[0])) {
-                $id = max($keys) + 1;
+            if (count($keys) === 0) {
+                $id = 1;
             } else {
-                throw new RBACException("ArrayDriver doesn't support automatic generation of string ids");
+                $id = max($keys) + 1;
             }
         }
 
+        $filtered['id'] = $id;
         $this->data['Permissions'][$id] = $filtered;
+
+        return $id;
     }
 
-    public function savePermissions(array $permissions): void
+    public function savePermissions(array $permissions): array
     {
-        if (! is_array($permissions[0])) {
-            $this->savePermission($permissions);
+        if (! array_key_exists(0, $permissions)) {
+            return [$this->savePermission($permissions)];
         }
 
+        $ids = [];
         foreach ($permissions as $permission) {
-            $this->savePermission($permission);
+            $ids[] = $this->savePermission($permission);
         }
+
+        return $ids;
+    }
+
+    private function saveRole(array $fields)
+    {
+        $filtered = array_filter($fields, function ($field) {
+            return in_array($field, ['id', 'name', 'description', 'parent', 'children']);
+        }, ARRAY_FILTER_USE_KEY);
+
+        $id = $filtered['id'];
+        if ($id === 0) {
+            // Find the first available id
+            $keys = array_keys($this->data['Roles']);
+            if (count($keys) === 0) {
+                $id = 1;
+            } else {
+                $id = max($keys) + 1;
+            }
+        }
+
+        $filtered['id'] = $id;
+        $this->data['Roles'][$id] = $filtered;
+
+        return $id;
+    }
+
+    public function saveRoles(array $roles): array
+    {
+        if (! array_key_exists(0, $roles)) {
+            return [$this->saveRole($roles)];
+        }
+
+        $ids = [];
+        foreach ($roles as $role) {
+            $ids[] = $this->saveRole($role);
+        }
+
+        return $ids;
     }
 }

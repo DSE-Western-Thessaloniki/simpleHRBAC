@@ -1,10 +1,18 @@
 <?php
 
 use Dsewth\SimpleHRBAC\Database\Driver\ArrayDriver;
+use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
 use Dsewth\SimpleHRBAC\RBAC;
+
+beforeEach(function () {
+    try {
+        RBAC::destroy();
+    } catch (RBACException $e) { // Ignore exception
+    }
+});
 
 test('HRBAC can be initialized with ArrayDriver', function () {
     $rbac = RBAC::initialize(new ArrayDriver());
@@ -48,6 +56,19 @@ test('RBAC returns all permissions', function () {
     }
 });
 
+test('RBAC can create a new permission', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $permission = new Permission();
+    $permission->setName('Test permission')
+        ->save();
+    var_dump($permission);
+
+    $permissions = $rbac->getAllPermissions();
+    expect(count($permissions))->toBe(1);
+    expect($permissions[0]->id())->toBe(1);
+    expect($permissions[0]->name())->toBe('Test permission');
+});
+
 test('RBAC returns all roles', function () {
     $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
     $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
@@ -59,6 +80,20 @@ test('RBAC returns all roles', function () {
     foreach ($roles as $role) {
         expect($role)->toBeInstanceOf(Role::class);
     }
+});
+
+test('RBAC can create a new role', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $role = new Role();
+    $role->setName('root')
+        ->setDescription('This is the root of the hierarchy tree')
+        ->save();
+
+    $roles = $rbac->getAllRoles();
+    expect(count($roles))->toBe(1);
+    expect($roles[0]->id())->toBe(1);
+    expect($roles[0]->name())->toBe('root');
+    expect($roles[0]->description())->toBe('This is the root of the hierarchy tree');
 });
 
 test('RBAC returns all subjects', function () {

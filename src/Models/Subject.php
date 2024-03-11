@@ -6,21 +6,22 @@ use Dsewth\SimpleHRBAC\RBAC;
 
 class Subject
 {
-    private string|int $id = -1;
+    private $id = 0;
 
     private string $name = '';
 
-    /** @var array<string|int> */
     private array $roles = [];
 
-    public function id(): string|int
+    public function id()
     {
         return $this->id;
     }
 
-    public function setId(string|int $id): void
+    public function setId($id): Subject
     {
         $this->id = $id;
+
+        return $this;
     }
 
     public function name(): string
@@ -28,15 +29,15 @@ class Subject
         return $this->name;
     }
 
-    public function setName(string $name): void
+    public function setName(string $name): Subject
     {
         $this->name = $name;
+
+        return $this;
     }
 
     /**
      * Return the roles of the subject
-     *
-     * @return array<string|int>
      */
     public function roles(): array
     {
@@ -45,12 +46,12 @@ class Subject
 
     /**
      * Set the roles of the subject
-     *
-     * @param  array<string|int>  $role
      */
-    public function setRoles(array $role): void
+    public function setRoles(array $role): Subject
     {
         $this->roles = [...$role];
+
+        return $this;
     }
 
     public static function fromRow(array $row)
@@ -64,7 +65,7 @@ class Subject
         return $instance;
     }
 
-    public static function find(string|int $id)
+    public static function find($id)
     {
         return RBAC::getInstance()->getSubjectById($id);
     }

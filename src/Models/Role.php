@@ -2,19 +2,21 @@
 
 namespace Dsewth\SimpleHRBAC\Models;
 
+use Dsewth\SimpleHRBAC\RBAC;
+
 class Role
 {
-    private string|int $id = -1;
+    private $id = 0;
 
     private string $name = '';
 
     private string $description = '';
 
-    private string|int $parent = -1;
+    private $parent = 0;
 
     private array $children = [];
 
-    public static function withID(string|int $id): Role
+    public static function withID($id): Role
     {
         $instance = new self();
 
@@ -34,19 +36,21 @@ class Role
         return $instance;
     }
 
-    public function setId(int $id)
+    public function setId($id)
     {
         $this->id = $id;
     }
 
-    public function id(): int
+    public function id()
     {
         return $this->id;
     }
 
-    public function setName(string $name)
+    public function setName(string $name): Role
     {
         $this->name = $name;
+
+        return $this;
     }
 
     public function name(): string
@@ -54,9 +58,11 @@ class Role
         return $this->name;
     }
 
-    public function setDescription(string $description)
+    public function setDescription(string $description): Role
     {
         $this->description = $description;
+
+        return $this;
     }
 
     public function description(): string
@@ -64,19 +70,23 @@ class Role
         return $this->description;
     }
 
-    public function setParent(string|int $id): void
+    public function setParent($id): Role
     {
         $this->parent = $id;
+
+        return $this;
     }
 
-    public function parent(): string|int
+    public function parent()
     {
         return $this->parent;
     }
 
-    public function setChildren(array $children): void
+    public function setChildren(array $children): Role
     {
         $this->children = $children;
+
+        return $this;
     }
 
     public function children(): array
@@ -93,5 +103,12 @@ class Role
             'parent' => $this->parent,
             'children' => $this->children,
         ];
+    }
+
+    public function save()
+    {
+        [$id] = RBAC::getInstance()->database()->saveRoles($this->toArray());
+
+        $this->id = $id;
     }
 }

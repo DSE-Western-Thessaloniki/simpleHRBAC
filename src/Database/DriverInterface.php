@@ -24,5 +24,10 @@ interface DriverInterface
     /**
      * Save permissions to the database
      */
-    public function savePermissions(array $permissions): void;
+    public function savePermissions(array $permissions): array;
+
+    /**
+     * Save roles to the database
+     */
+    public function saveRoles(array $roles): array;
 }

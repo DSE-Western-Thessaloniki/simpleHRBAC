@@ -11,7 +11,7 @@ use Dsewth\SimpleHRBAC\Models\Subject;
 
 class RBAC
 {
-    private static RBAC $instance;
+    private static $instance = null;
 
     protected Database $db;
 
@@ -20,6 +20,11 @@ class RBAC
     protected function __construct(DriverInterface $databaseDriver)
     {
         $this->db = new Database($databaseDriver);
+    }
+
+    public static function destroy()
+    {
+        static::$instance = null;
     }
 
     public static function initialize(DriverInterface $driver): RBAC
@@ -96,7 +101,7 @@ class RBAC
         return $result;
     }
 
-    public function getSubjectById(string|int $id): ?Subject
+    public function getSubjectById($id): ?Subject
     {
         $rows = $this->db->subjects(['id' => $id]);
 

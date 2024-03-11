@@ -9,6 +9,7 @@ use Dsewth\SimpleHRBAC\Exceptions\RBACException;
  * @method array roles(array $filter = ['*'])
  * @method array subjects(array $filter = ['*'])
  * @method void savePermissions(array $permissions)
+ * @method void saveRoles(array $roles)
  */
 class Database
 {

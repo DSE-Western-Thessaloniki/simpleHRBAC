@@ -6,7 +6,7 @@ use Dsewth\SimpleHRBAC\RBAC;
 
 class Permission
 {
-    private string|int $id = -1;
+    private $id = 0;
 
     private string $name = '';
 
@@ -20,14 +20,16 @@ class Permission
         return $instance;
     }
 
-    public function id(): string|int
+    public function id()
     {
         return $this->id;
     }
 
-    public function setId(string|int $id): void
+    public function setId($id): Permission
     {
         $this->id = $id;
+
+        return $this;
     }
 
     public function name(): string
@@ -35,9 +37,11 @@ class Permission
         return $this->name;
     }
 
-    public function setName(string $name): void
+    public function setName(string $name): Permission
     {
         $this->name = $name;
+
+        return $this;
     }
 
     public function toArray(): array
@@ -50,6 +54,8 @@ class Permission
 
     public function save(): void
     {
-        RBAC::getInstance()->database()->savePermissions($this->toArray());
+        [$id] = RBAC::getInstance()->database()->savePermissions($this->toArray());
+
+        $this->id = $id;
     }
 }
