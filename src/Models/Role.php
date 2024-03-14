@@ -4,7 +4,7 @@ namespace Dsewth\SimpleHRBAC\Models;
 
 use Dsewth\SimpleHRBAC\RBAC;
 
-class Role
+class Role extends BaseModel
 {
     private $id = 0;
 
@@ -16,12 +16,17 @@ class Role
 
     private array $children = [];
 
-    public static function withID($id): Role
-    {
-        $instance = new self();
+    protected static string $table = 'roles';
 
-        return $instance;
-    }
+    protected array $columns = ['id', 'name', 'description', 'parent', 'children'];
+
+    protected string $closureTable = 'roles_closure';
+
+    protected array $closureTableColumns = ['parent', 'child', 'depth'];
+
+    protected string $permissionsTable = 'roles_permissions';
+
+    protected array $permissionsTableColumns = ['role_id', 'permission_id'];
 
     public static function fromRow(array $row): Role
     {
@@ -107,7 +112,7 @@ class Role
 
     public function save()
     {
-        [$id] = RBAC::getInstance()->database()->saveRoles($this->toArray());
+        [$id] = RBAC::getInstance()->database()->saveRows(static::$table, $this->columns, $this->toArray());
 
         $this->id = $id;
     }

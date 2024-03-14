@@ -4,13 +4,17 @@ namespace Dsewth\SimpleHRBAC\Models;
 
 use Dsewth\SimpleHRBAC\RBAC;
 
-class Permission
+class Permission extends BaseModel
 {
     private $id = 0;
 
     private string $name = '';
 
-    public static function fromRow(array $row)
+    protected static string $table = 'permissions';
+
+    private array $columns = ['id', 'name'];
+
+    public static function fromRow(array $row): Permission
     {
         $instance = new self();
 
@@ -54,7 +58,7 @@ class Permission
 
     public function save(): void
     {
-        [$id] = RBAC::getInstance()->database()->savePermissions($this->toArray());
+        [$id] = RBAC::getInstance()->database()->saveRows(static::$table, $this->columns, $this->toArray());
 
         $this->id = $id;
     }

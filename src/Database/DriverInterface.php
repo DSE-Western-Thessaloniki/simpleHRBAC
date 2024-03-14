@@ -7,27 +7,12 @@ interface DriverInterface
     public function driverName(): string;
 
     /**
-     * Get all permissions that match to the filter.
+     * Returns all available object from the database that match the filter
      */
-    public function permissions(array $filter = ['*']): array;
+    public function select(string $table, array $filter = ['*']): array;
 
     /**
-     * Returns all available roles from the database
+     * Save rows to the database
      */
-    public function roles(array $filter = ['*']): array;
-
-    /**
-     * Returns all available subjects from the database
-     */
-    public function subjects(array $filter = ['*']): array;
-
-    /**
-     * Save permissions to the database
-     */
-    public function savePermissions(array $permissions): array;
-
-    /**
-     * Save roles to the database
-     */
-    public function saveRoles(array $roles): array;
+    public function saveRows(string $table, array $columns, array $rows): array;
 }

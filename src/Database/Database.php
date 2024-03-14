@@ -5,11 +5,8 @@ namespace Dsewth\SimpleHRBAC\Database;
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 
 /**
- * @method array permissions(array $filter = ['*'])
- * @method array roles(array $filter = ['*'])
- * @method array subjects(array $filter = ['*'])
- * @method void savePermissions(array $permissions)
- * @method void saveRoles(array $roles)
+ * @method array select(string $table, array $filter = ['*'])
+ * @method array saveRows(string $table, array $columns, array $rows)
  */
 class Database
 {
@@ -27,5 +24,10 @@ class Database
         }
 
         throw new RBACException("Invalid function '$name' called for '{$this->driver->driverName()}'");
+    }
+
+    public function driver()
+    {
+        return $this->driver;
     }
 }

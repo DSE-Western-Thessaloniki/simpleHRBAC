@@ -23,62 +23,6 @@ class ArrayDriver implements DriverInterface
         return 'ArrayDriver';
     }
 
-    public static function withData(array $data): ArrayDriver
-    {
-        $instance = new self();
-        $instance->fill($data);
-
-        return $instance;
-    }
-
-    protected function fill(array $data)
-    {
-        if (isset($data['Permissions'])) {
-            if (! is_array($data['Permissions'])) {
-                throw new RBACException("Array key 'Permissions' should be an array");
-            }
-
-            foreach ($data['Permissions'] as $permission) {
-                $id = $permission['id'];
-                if (array_key_exists($id, $this->data['Permissions'])) {
-                    throw new RBACException("Duplicate id $id for permissions {$permission['name']} and {$this->data['Permissions'][$id]->name()}");
-                }
-
-                $this->data['Permissions'][$id] = $permission;
-            }
-        }
-
-        if (isset($data['Roles'])) {
-            if (! is_array($data['Roles'])) {
-                throw new RBACException("Array key 'Roles' should be an array");
-            }
-
-            foreach ($data['Roles'] as $role) {
-                $id = $role['id'];
-                if (array_key_exists($id, $this->data['Roles'])) {
-                    throw new RBACException("Duplicate id $id for permissions {$role['name']} and {$this->data['Roles'][$id]->name()}");
-                }
-
-                $this->data['Roles'][$id] = $role;
-            }
-        }
-
-        if (isset($data['Subjects'])) {
-            if (! is_array($data['Subjects'])) {
-                throw new RBACException("Array key 'Subjects' should be an array");
-            }
-
-            foreach ($data['Subjects'] as $subject) {
-                $id = $subject['id'];
-                if (array_key_exists($id, $this->data['Subjects'])) {
-                    throw new RBACException("Duplicate id $id for permissions {$subject['name']} and {$this->data['Subjects'][$id]->name()}");
-                }
-
-                $this->data['Subjects'][$id] = $subject;
-            }
-        }
-    }
-
     private function satisfies($item, $filter): bool
     {
         if (count($filter) === 1 && array_key_exists(0, $filter) && $filter[0] === '*') {
@@ -128,55 +72,33 @@ class ArrayDriver implements DriverInterface
         return $result;
     }
 
-    public function permissions(array $filter = ['*']): array
+    public function select(string $table, array $filter = ['*']): array
     {
         $result = [];
 
-        foreach ($this->data['Permissions'] as $permission) {
-            if ($this->satisfies($permission, $filter)) {
-                $result[] = [...$permission];
+        foreach ($this->data[$table] as $row) {
+            if ($this->satisfies($row, $filter)) {
+                $result[] = [...$row];
             }
         }
 
         return $result;
     }
 
-    public function roles(array $filter = ['*']): array
+    public function saveRow(string $table, array $columns, array $row)
     {
-        $result = [];
-
-        foreach ($this->data['Roles'] as $role) {
-            if ($this->satisfies($role, $filter)) {
-                $result[] = [...$role];
-            }
-        }
-
-        return $result;
-    }
-
-    public function subjects(array $filter = ['*']): array
-    {
-        $result = [];
-
-        foreach ($this->data['Subjects'] as $subject) {
-            if ($this->satisfies($subject, $filter)) {
-                $result[] = [...$subject];
-            }
-        }
-
-        return $result;
-    }
-
-    private function savePermission(array $fields)
-    {
-        $filtered = array_filter($fields, function ($field) {
-            return in_array($field, ['id', 'name']);
+        $filtered = array_filter($row, function ($field) use ($columns) {
+            return in_array($field, $columns);
         }, ARRAY_FILTER_USE_KEY);
+
+        if (! isset($this->data[$table])) {
+            $this->data[$table] = [];
+        }
 
         $id = $filtered['id'];
         if ($id === 0) {
             // Find the first available id
-            $keys = array_keys($this->data['Permissions']);
+            $keys = array_keys($this->data[$table]);
             if (count($keys) === 0) {
                 $id = 1;
             } else {
@@ -185,57 +107,20 @@ class ArrayDriver implements DriverInterface
         }
 
         $filtered['id'] = $id;
-        $this->data['Permissions'][$id] = $filtered;
+        $this->data[$table][$id] = $filtered;
 
         return $id;
     }
 
-    public function savePermissions(array $permissions): array
+    public function saveRows(string $table, array $columns, array $data): array
     {
-        if (! array_key_exists(0, $permissions)) {
-            return [$this->savePermission($permissions)];
+        if (! array_key_exists(0, $data)) {
+            return [$this->saveRow($table, $columns, $data)];
         }
 
         $ids = [];
-        foreach ($permissions as $permission) {
-            $ids[] = $this->savePermission($permission);
-        }
-
-        return $ids;
-    }
-
-    private function saveRole(array $fields)
-    {
-        $filtered = array_filter($fields, function ($field) {
-            return in_array($field, ['id', 'name', 'description', 'parent', 'children']);
-        }, ARRAY_FILTER_USE_KEY);
-
-        $id = $filtered['id'];
-        if ($id === 0) {
-            // Find the first available id
-            $keys = array_keys($this->data['Roles']);
-            if (count($keys) === 0) {
-                $id = 1;
-            } else {
-                $id = max($keys) + 1;
-            }
-        }
-
-        $filtered['id'] = $id;
-        $this->data['Roles'][$id] = $filtered;
-
-        return $id;
-    }
-
-    public function saveRoles(array $roles): array
-    {
-        if (! array_key_exists(0, $roles)) {
-            return [$this->saveRole($roles)];
-        }
-
-        $ids = [];
-        foreach ($roles as $role) {
-            $ids[] = $this->saveRole($role);
+        foreach ($data as $row) {
+            $ids[] = $this->saveRow($table, $columns, $row);
         }
 
         return $ids;

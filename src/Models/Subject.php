@@ -4,13 +4,21 @@ namespace Dsewth\SimpleHRBAC\Models;
 
 use Dsewth\SimpleHRBAC\RBAC;
 
-class Subject
+class Subject extends BaseModel
 {
     private $id = 0;
 
     private string $name = '';
 
     private array $roles = [];
+
+    protected static string $table = 'subjects';
+
+    protected array $columns = ['id', 'name'];
+
+    protected string $rolesTable = 'subjects_roles';
+
+    protected array $rolesTableColumns = ['subject_id', 'role_id'];
 
     public function id()
     {
@@ -47,32 +55,22 @@ class Subject
     /**
      * Set the roles of the subject
      */
-    public function setRoles(array $role): Subject
+    public function setRoles(array $roles): Subject
     {
-        $this->roles = [...$role];
+        $this->roles = [...$roles];
 
         return $this;
     }
 
-    public static function fromRow(array $row)
+    public static function fromRow(array $row): Subject
     {
         $instance = new self();
 
         $instance->setId($row['id']);
         $instance->setName($row['name']);
-        $instance->setRoles($row['roles']);
+        $instance->setRoles($row['roles'] ?? []);
 
         return $instance;
-    }
-
-    public static function find($id)
-    {
-        return RBAC::getInstance()->getSubjectById($id);
-    }
-
-    public static function findName(string $name)
-    {
-        return RBAC::getInstance()->getSubjectsByName($name);
     }
 
     public function toArray(): array
@@ -82,5 +80,12 @@ class Subject
             'name' => $this->name,
             'roles' => $this->roles,
         ];
+    }
+
+    public function save()
+    {
+        [$id] = RBAC::getInstance()->database()->saveRows(static::$table, $this->columns, $this->toArray());
+
+        $this->id = $id;
     }
 }

@@ -23,31 +23,32 @@ test('HRBAC can be initialized with ArrayDriver', function () {
 test('ArrayDriver can be initialized with data', function () {
     expect(file_exists(__DIR__.'/../Data/Json/Dataset.json'))->toBeTrue();
 
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $driver = ArrayDriver::withData(json_decode($data, true));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
+    $driver = $rbac->database()->driver();
     expect($driver)->toBeInstanceOf(ArrayDriver::class);
 
-    $permissions = $driver->permissions();
+    $permissions = Permission::all();
     expect($permissions)->toBeArray();
     expect(count($permissions))
         ->toBe(3);
 
-    $roles = $driver->roles();
+    $roles = Role::all();
     expect($roles)->toBeArray();
     expect(count($roles))
         ->toBe(4);
 
-    $subjects = $driver->subjects();
+    $subjects = Subject::all();
     expect($subjects)->toBeArray();
     expect(count($subjects))
         ->toBe(4);
 });
 
 test('RBAC returns all permissions', function () {
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
-    $permissions = $rbac->getAllPermissions();
+    $permissions = Permission::all();
     expect($permissions)->toBeArray();
     expect(count($permissions))
         ->toBe(3);
@@ -61,19 +62,18 @@ test('RBAC can create a new permission', function () {
     $permission = new Permission();
     $permission->setName('Test permission')
         ->save();
-    var_dump($permission);
 
-    $permissions = $rbac->getAllPermissions();
+    $permissions = Permission::all();
     expect(count($permissions))->toBe(1);
     expect($permissions[0]->id())->toBe(1);
     expect($permissions[0]->name())->toBe('Test permission');
 });
 
 test('RBAC returns all roles', function () {
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
-    $roles = $rbac->getAllRoles();
+    $roles = Role::all();
     expect($roles)->toBeArray();
     expect(count($roles))
         ->toBe(4);
@@ -89,7 +89,7 @@ test('RBAC can create a new role', function () {
         ->setDescription('This is the root of the hierarchy tree')
         ->save();
 
-    $roles = $rbac->getAllRoles();
+    $roles = Role::all();
     expect(count($roles))->toBe(1);
     expect($roles[0]->id())->toBe(1);
     expect($roles[0]->name())->toBe('root');
@@ -97,10 +97,10 @@ test('RBAC can create a new role', function () {
 });
 
 test('RBAC returns all subjects', function () {
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
-    $subjects = $rbac->getAllSubjects();
+    $subjects = Subject::all();
     expect($subjects)->toBeArray();
     expect(count($subjects))
         ->toBe(4);
@@ -110,20 +110,22 @@ test('RBAC returns all subjects', function () {
 });
 
 test('RBAC can find a subject with a given id', function () {
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
-    $subject = $rbac->getSubjectById(2);
+    /** @var Subject $subject */
+    $subject = Subject::find(2);
     expect($subject)->toBeInstanceOf(Subject::class);
     expect($subject->id())->toBe(2);
     expect($subject->name())->toBe('Alice');
 });
 
 test('RBAC can find subjects matching a given name', function () {
-    $data = file_get_contents(__DIR__.'/../Data/Json/Dataset.json');
-    $rbac = RBAC::initialize(ArrayDriver::withData(json_decode($data, true)));
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
-    $subject = $rbac->getSubjectsByName('Alice');
+    /** @var array<Subject> $subject */
+    $subject = Subject::select(['name' => 'Alice']);
     expect($subject)->toBeArray();
     expect(count($subject))->toBe(1);
     expect($subject[0])->toBeInstanceOf(Subject::class);
@@ -131,7 +133,8 @@ test('RBAC can find subjects matching a given name', function () {
     expect($subject[0]->name())->toBe('Alice');
 
     // B_o_b, Car_o_l, r_o_ot
-    $subject = $rbac->getSubjectsByName('o');
+    /** @var array<Subject> $subject */
+    $subject = Subject::select(['name' => ['like', 'o']]);
     expect($subject)->toBeArray();
     expect(count($subject))->toBe(3);
 });

@@ -59,69 +59,83 @@ class RBAC
         return $this->db;
     }
 
-    /**
-     * Get all permissions
-     *
-     * @return array<\Dsewth\SimpleHRBAC\Models\Permission>
-     */
-    public function getAllPermissions(): array
+    public function loadJsonFile(string $filename)
     {
-        $result = array_map(function ($row) {
-            return Permission::fromRow($row);
-        }, $this->db->permissions());
-
-        return $result;
-    }
-
-    /**
-     * Returns all available roles from the database
-     *
-     * @return array<\Dsewth\SimpleHRBAC\Models\Role>
-     */
-    public function getAllRoles(): array
-    {
-        $result = array_map(function ($row) {
-            return Role::fromRow($row);
-        }, $this->db->roles());
-
-        return $result;
-    }
-
-    /**
-     * Returns all available subjects from the database
-     *
-     * @return array<\Dsewth\SimpleHRBAC\Models\Subject>
-     */
-    public function getAllSubjects(): array
-    {
-        $result = array_map(function ($row) {
-            return Subject::fromRow($row);
-        }, $this->db->subjects());
-
-        return $result;
-    }
-
-    public function getSubjectById($id): ?Subject
-    {
-        $rows = $this->db->subjects(['id' => $id]);
-
-        if (empty($rows)) {
-            return null;
+        $data = file_get_contents($filename);
+        if (! $data) {
+            // File read failed
+            return false;
         }
 
-        return Subject::fromRow($rows[0]);
+        $data = json_decode($data, true);
+        if (is_null($data)) {
+            // Json decode failed
+            return false;
+        }
+
+        return $this->loadData($data);
     }
 
-    /**
-     * @return array<Subject>
-     */
-    public function getSubjectsByName(string $name): array
+    public function loadData(array $data)
     {
-        $rows = $this->db->subjects(['name' => ['like', $name]]);
+        if (isset($data['Permissions'])) {
+            if (! is_array($data['Permissions'])) {
+                throw new RBACException("Array key 'Permissions' should be an array");
+            }
 
-        return array_map(function ($row) {
-            return Subject::fromRow($row);
-        }, $rows);
+            foreach ($data['Permissions'] as $row) {
+                // $id = $permission['id'];
+                // if (array_key_exists($id, $this->data['Permissions'])) {
+                //     throw new RBACException("Duplicate id $id for permissions {$permission['name']} and {$this->data['Permissions'][$id]->name()}");
+                // }
+
+                // $this->data['Permissions'][$id] = $permission;
+
+                /** @var Permission $permission */
+                $permission = Permission::fromData($row);
+                $permission->save();
+            }
+        }
+
+        if (isset($data['Roles'])) {
+            if (! is_array($data['Roles'])) {
+                throw new RBACException("Array key 'Roles' should be an array");
+            }
+
+            foreach ($data['Roles'] as $row) {
+                // $id = $role['id'];
+                // if (array_key_exists($id, $this->data['Roles'])) {
+                //     throw new RBACException("Duplicate id $id for permissions {$role['name']} and {$this->data['Roles'][$id]->name()}");
+                // }
+
+                // $this->data['Roles'][$id] = $role;
+
+                /** @var Role $role */
+                $role = Role::fromData($row);
+                $role->save();
+            }
+        }
+
+        if (isset($data['Subjects'])) {
+            if (! is_array($data['Subjects'])) {
+                throw new RBACException("Array key 'Subjects' should be an array");
+            }
+
+            foreach ($data['Subjects'] as $row) {
+                // $id = $subject['id'];
+                // if (array_key_exists($id, $this->data['Subjects'])) {
+                //     throw new RBACException("Duplicate id $id for permissions {$subject['name']} and {$this->data['Subjects'][$id]->name()}");
+                // }
+
+                // $this->data['Subjects'][$id] = $subject;
+
+                /** @var Subject $subject */
+                $subject = Subject::fromData($row);
+                $subject->save();
+            }
+        }
+
+        return true;
     }
 
     public function addRole($role)
