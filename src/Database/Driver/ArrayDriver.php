@@ -136,7 +136,7 @@ class ArrayDriver implements DriverInterface
             return false;
         }
 
-        if (! array_key_exists($filtered['id'], $this->data[$table])) {
+        if (! $this->satisfies($this->data[$table][$filtered['id']], $filtered)) {
             return false;
         }
 
