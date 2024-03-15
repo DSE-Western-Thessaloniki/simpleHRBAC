@@ -7,6 +7,7 @@ use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 /**
  * @method array select(string $table, array $filter = ['*'])
  * @method array saveRows(string $table, array $columns, array $rows)
+ * @method array deleteRows(string $table, array $columns, array $rows)
  */
 class Database
 {

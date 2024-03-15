@@ -14,7 +14,7 @@ beforeEach(function () {
     }
 });
 
-test('HRBAC can be initialized with ArrayDriver', function () {
+test('RBAC can be initialized with ArrayDriver', function () {
     $rbac = RBAC::initialize(new ArrayDriver());
     expect($rbac)->toBeInstanceOf(RBAC::class);
     unset($rbac);
@@ -44,7 +44,7 @@ test('ArrayDriver can be initialized with data', function () {
         ->toBe(4);
 });
 
-test('RBAC returns all permissions', function () {
+test('RBAC can return all permissions', function () {
     $rbac = RBAC::initialize(new ArrayDriver());
     $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 
@@ -69,7 +69,55 @@ test('RBAC can create a new permission', function () {
     expect($permissions[0]->name())->toBe('Test permission');
 });
 
-test('RBAC returns all roles', function () {
+test('RBAC can find a permission with specific id', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
+
+    /** @var Permission $permission */
+    $permission = Permission::find(2);
+    expect($permission)->toBeInstanceOf(Permission::class);
+    expect($permission->id())->toBe(2);
+});
+
+test('RBAC can edit a permission with specific id', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
+
+    /** @var Permission $permission */
+    $permission = Permission::find(2);
+    expect($permission)->toBeInstanceOf(Permission::class);
+    expect($permission->id())->toBe(2);
+    expect($permission->name())->toBe('Change Password');
+    $permission->setName('Remove password');
+    expect($permission->name())->toBe('Remove password');
+
+    // Make sure it stays the same even after recalling from the "database"
+    $permission->save();
+    /** @var Permission $permission */
+    $permission = Permission::find(2);
+    expect($permission->name())->toBe('Remove password');
+});
+
+test('RBAC can delete a permission with specific id', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $permission = new Permission();
+    $permission->setName('Test permission')
+        ->save();
+
+    /** @var Permission $permission */
+    $permission = Permission::find(1);
+    expect($permission)->toBeInstanceOf(Permission::class);
+    expect($permission->id())->toBe(1);
+    expect($permission->name())->toBe('Test permission');
+
+    $permission->delete();
+
+    /** @var Permission $permission */
+    $permission = Permission::find(1);
+    expect($permission)->toBeNull();
+});
+
+test('RBAC can return all roles', function () {
     $rbac = RBAC::initialize(new ArrayDriver());
     $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
 

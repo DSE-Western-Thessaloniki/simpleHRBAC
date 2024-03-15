@@ -62,4 +62,9 @@ class Permission extends BaseModel
 
         $this->id = $id;
     }
+
+    public function delete(): void
+    {
+        RBAC::getInstance()->database()->deleteRows(static::$table, $this->columns, ['id' => $this->id]);
+    }
 }

@@ -125,4 +125,37 @@ class ArrayDriver implements DriverInterface
 
         return $ids;
     }
+
+    private function deleteRow(string $table, array $columns, array $row): bool
+    {
+        $filtered = array_filter($row, function ($field) use ($columns) {
+            return in_array($field, $columns);
+        }, ARRAY_FILTER_USE_KEY);
+
+        if (! isset($this->data[$table])) {
+            return false;
+        }
+
+        if (! array_key_exists($filtered['id'], $this->data[$table])) {
+            return false;
+        }
+
+        unset($this->data[$table][$filtered['id']]);
+
+        return true;
+    }
+
+    public function deleteRows(string $table, array $columns, array $data): array
+    {
+        if (! array_key_exists(0, $data)) {
+            return [$this->deleteRow($table, $columns, $data)];
+        }
+
+        $ids = [];
+        foreach ($data as $row) {
+            $ids[] = $this->deleteRow($table, $columns, $row);
+        }
+
+        return $ids;
+    }
 }

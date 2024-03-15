@@ -15,4 +15,9 @@ interface DriverInterface
      * Save rows to the database
      */
     public function saveRows(string $table, array $columns, array $rows): array;
+
+    /**
+     * Save rows to the database
+     */
+    public function deleteRows(string $table, array $columns, array $rows): array;
 }
