@@ -144,6 +144,25 @@ test('RBAC can create a new role', function () {
     expect($roles[0]->description())->toBe('This is the root of the hierarchy tree');
 });
 
+test('RBAC can find a role with specific id', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
+
+    /** @var Role $role */
+    $role = Role::find(2);
+    expect($role)->toBeInstanceOf(Role::class);
+    expect($role->id())->toBe(2);
+    expect($role->name())->toBe('Administrator');
+    expect($role->description())->toBe('This is an administrator role');
+    $permissions = $role->permissions();
+    expect($permissions)
+        ->toBeArray()
+        ->toHaveCount(3);
+    foreach ($permissions as $permission) {
+        expect($permission)->toBeInstanceOf(Permission::class);
+    }
+});
+
 test('RBAC returns all subjects', function () {
     $rbac = RBAC::initialize(new ArrayDriver());
     $rbac->loadJsonFile(__DIR__.'/../Data/Json/Dataset.json');
@@ -155,6 +174,18 @@ test('RBAC returns all subjects', function () {
     foreach ($subjects as $subject) {
         expect($subject)->toBeInstanceOf(Subject::class);
     }
+});
+
+test('RBAC can create a new subject', function () {
+    $rbac = RBAC::initialize(new ArrayDriver());
+    $subject = new Subject();
+    $subject->setName('root')
+        ->save();
+
+    $subjects = Subject::all();
+    expect(count($subjects))->toBe(1);
+    expect($subjects[0]->id())->toBe(1);
+    expect($subjects[0]->name())->toBe('root');
 });
 
 test('RBAC can find a subject with a given id', function () {

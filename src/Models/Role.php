@@ -94,9 +94,27 @@ class Role extends BaseModel
         return $this;
     }
 
+    public function addPermission(Permission $permission)
+    {
+        RBAC::getInstance()
+            ->database()
+            ->saveRows($this->permissionsTable, $this->permissionsTableColumns, ['role_id' => $this->id, 'permission_id' => $permission->id()]);
+    }
+
     public function children(): array
     {
         return $this->children;
+    }
+
+    public function permissions(): array
+    {
+        $permissions = RBAC::getInstance()
+            ->database()
+            ->select($this->permissionsTable, ['role_id' => $this->id()]);
+
+        return array_map(function ($row) {
+            return Permission::find($row);
+        }, $permissions);
     }
 
     public function toArray(): array

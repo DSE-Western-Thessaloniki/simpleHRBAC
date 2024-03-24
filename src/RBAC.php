@@ -113,6 +113,13 @@ class RBAC
                 /** @var Role $role */
                 $role = Role::fromData($row);
                 $role->save();
+
+                if (isset($row['permissions'])) {
+                    foreach ($row['permissions'] as $permissionId) {
+                        $permission = Permission::find($permissionId);
+                        $role->addPermission($permission);
+                    }
+                }
             }
         }
 
