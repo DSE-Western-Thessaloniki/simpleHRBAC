@@ -39,20 +39,16 @@ class ClosureTable
         }
     }
 
-    public function removeFromTree(): bool
+    public function removeFromTree(): void
     {
-        $parents = $this->parents();
-
-        $deletedParents = DB::delete(
+        DB::delete(
             "DELETE FROM {$this->table} 
 			WHERE child = ?", [
                 $this->referenceRole->id,
             ]
         );
 
-        $children = $this->children();
-
-        $deletedChildren = DB::delete(
+        DB::delete(
             "DELETE FROM {$this->table} 
 			WHERE child IN (
 				SELECT child
@@ -62,12 +58,6 @@ class ClosureTable
                 $this->referenceRole->id,
             ]
         );
-
-        if ($parents->count() === $deletedParents && $children->count() === $deletedChildren) {
-            return true;
-        }
-
-        return false;
     }
 
     /**

@@ -19,7 +19,9 @@ class RoleObserver
      */
     public function updated(Role $role): void
     {
-        // ...
+        if (! $role->wasChanged('parent_id')) {
+            return;
+        }
     }
 
     /**
@@ -27,7 +29,9 @@ class RoleObserver
      */
     public function deleted(Role $role): void
     {
-        // ...
+        // Όταν διαγράφουμε έναν ρόλο, διαγράφουμε και όλα τα παιδιά του
+        $role->children()->each(fn ($child) => $child->delete());
+        $role->tree()->removeFromTree();
     }
 
     /**
