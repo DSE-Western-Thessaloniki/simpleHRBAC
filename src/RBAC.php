@@ -2,61 +2,33 @@
 
 namespace Dsewth\SimpleHRBAC;
 
-use Dsewth\SimpleHRBAC\Database\Database;
-use Dsewth\SimpleHRBAC\Database\DriverInterface;
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
+use Illuminate\Container\Container;
+use Illuminate\Database\Capsule\Manager;
+use Illuminate\Events\Dispatcher;
 
 class RBAC
 {
-    private static $instance = null;
-
-    protected Database $db;
+    protected ?Manager $db;
 
     protected array $roles;
 
-    protected function __construct(DriverInterface $databaseDriver)
+    public function __construct(?array $config)
     {
-        $this->db = new Database($databaseDriver);
-    }
-
-    public static function destroy()
-    {
-        static::$instance = null;
-    }
-
-    public static function initialize(DriverInterface $driver): RBAC
-    {
-        if (! isset(self::$instance)) {
-            self::$instance = new self($driver);
-
-            return self::$instance;
-        } else {
-            self::$instance->setDatabaseDriver($driver);
-
-            return self::$instance;
-        }
-    }
-
-    private function setDatabaseDriver($driver)
-    {
-        $this->db = new Database($driver);
-    }
-
-    public static function getInstance(): RBAC
-    {
-        if (! isset(self::$instance)) {
-            throw new RBACException('HRBAC not initialized! Please use initialize() instead.');
+        if (! array_key_exists('database', $config)) {
+            throw new RBACException('No database configuration specified!');
         }
 
-        return self::$instance;
-    }
-
-    public function database(): Database
-    {
-        return $this->db;
+        if ($config && isset($config['database']) && ! app()->isBooted()) {
+            $this->db = new Manager();
+            $default = $config['database']['default'];
+            $this->db->addConnection($config['database']['connections'][$default]);
+            $this->db->setEventDispatcher(new Dispatcher(new Container));
+            $this->db->bootEloquent();
+        }
     }
 
     public function loadJsonFile(string $filename)
@@ -84,15 +56,8 @@ class RBAC
             }
 
             foreach ($data['Permissions'] as $row) {
-                // $id = $permission['id'];
-                // if (array_key_exists($id, $this->data['Permissions'])) {
-                //     throw new RBACException("Duplicate id $id for permissions {$permission['name']} and {$this->data['Permissions'][$id]->name()}");
-                // }
-
-                // $this->data['Permissions'][$id] = $permission;
-
                 /** @var Permission $permission */
-                $permission = Permission::fromData($row);
+                $permission = Permission::create($row);
                 $permission->save();
             }
         }
@@ -103,21 +68,14 @@ class RBAC
             }
 
             foreach ($data['Roles'] as $row) {
-                // $id = $role['id'];
-                // if (array_key_exists($id, $this->data['Roles'])) {
-                //     throw new RBACException("Duplicate id $id for permissions {$role['name']} and {$this->data['Roles'][$id]->name()}");
-                // }
-
-                // $this->data['Roles'][$id] = $role;
-
                 /** @var Role $role */
-                $role = Role::fromData($row);
+                $role = Role::create($row);
                 $role->save();
 
                 if (isset($row['permissions'])) {
                     foreach ($row['permissions'] as $permissionId) {
                         $permission = Permission::find($permissionId);
-                        $role->addPermission($permission);
+                        $role->permissions()->save($permission);
                     }
                 }
             }
@@ -129,44 +87,12 @@ class RBAC
             }
 
             foreach ($data['Subjects'] as $row) {
-                // $id = $subject['id'];
-                // if (array_key_exists($id, $this->data['Subjects'])) {
-                //     throw new RBACException("Duplicate id $id for permissions {$subject['name']} and {$this->data['Subjects'][$id]->name()}");
-                // }
-
-                // $this->data['Subjects'][$id] = $subject;
-
                 /** @var Subject $subject */
-                $subject = Subject::fromData($row);
+                $subject = Subject::create($row);
                 $subject->save();
             }
         }
 
         return true;
-    }
-
-    public function addRole($role)
-    {
-
-    }
-
-    public function removeRole($role)
-    {
-
-    }
-
-    public function addPermission($permission)
-    {
-
-    }
-
-    public function removePermission($permission)
-    {
-
-    }
-
-    public function hasPermission($role, $permission)
-    {
-
     }
 }

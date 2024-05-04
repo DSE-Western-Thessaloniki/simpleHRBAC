@@ -2,69 +2,18 @@
 
 namespace Dsewth\SimpleHRBAC\Models;
 
-use Dsewth\SimpleHRBAC\RBAC;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Permission extends BaseModel
+class Permission extends Model
 {
-    private $id = 0;
+    /** @var array */
+    protected $fillable = ['name'];
 
-    private string $name = '';
+    public $timestamps = false;
 
-    protected static string $table = 'permissions';
-
-    private array $columns = ['id', 'name'];
-
-    public static function fromRow(array $row): Permission
+    public function roles(): BelongsToMany
     {
-        $instance = new self();
-
-        $instance->setId($row['id']);
-        $instance->setName($row['name']);
-
-        return $instance;
-    }
-
-    public function id()
-    {
-        return $this->id;
-    }
-
-    public function setId($id): Permission
-    {
-        $this->id = $id;
-
-        return $this;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): Permission
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-        ];
-    }
-
-    public function save(): void
-    {
-        [$id] = RBAC::getInstance()->database()->saveRows(static::$table, $this->columns, $this->toArray());
-
-        $this->id = $id;
-    }
-
-    public function delete(): void
-    {
-        RBAC::getInstance()->database()->deleteRows(static::$table, $this->columns, ['id' => $this->id]);
+        return $this->belongsToMany(Role::class);
     }
 }

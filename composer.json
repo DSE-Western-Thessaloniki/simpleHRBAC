@@ -4,7 +4,10 @@
     "type": "library",
     "license": "GPL-3.0-or-later",
     "require": {
-        "php": ">=8.0"
+        "php": "^8.2",
+        "illuminate/database": "^11.0",
+        "illuminate/events": "^11.0",
+        "symfony/var-dumper": "^7.0"
     },
     "autoload": {
         "psr-4": {
@@ -20,11 +23,48 @@
     "require-dev": {
         "laravel/pint": "^1.14",
         "pestphp/pest": "^2.34",
-        "phpstan/phpstan": "^1.10"
+        "phpstan/phpstan": "^1.10",
+        "orchestra/testbench": "^9.0.4"
     },
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Dsewth\\SimpleHRBAC\\Providers\\SimpleHRBACServiceProvider"
+            ]
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve"
+        ],
+        "lint": [
+            "@php vendor/bin/pint",
+            "@php vendor/bin/phpstan analyse"
+        ],
+        "test": [
+            "@php vendor/bin/pest"
+        ]
     }
 }

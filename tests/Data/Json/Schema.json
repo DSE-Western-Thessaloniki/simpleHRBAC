@@ -55,23 +55,12 @@
 						},
 						"uniqueItems": true
 					},
-					"parent": {
+					"parent_id": {
 						"type": [
 							"integer",
 							"string"
 						],
 						"description": "We establish a hierarchy of roles by specifying the parent of the role. All roles should have a parent except the \"root\" role."
-					},
-					"children": {
-						"type": "array",
-						"description": "We establish a hierarchy of roles by specifying the children of the role. All nodes should have children except for the leaves of the tree.",
-						"items": {
-							"type": [
-								"integer",
-								"string"
-							]
-						},
-						"uniqueItems": true
 					}
 				},
 				"additionalProperties": false,

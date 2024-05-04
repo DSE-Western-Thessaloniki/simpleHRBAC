@@ -1,8 +1,9 @@
 {
-	"intelephense.environment.phpVersion": "8.0",
+	"intelephense.environment.phpVersion": "8.2",
 	"cSpell.words": [
 		"cloneable",
 		"Dsewth",
-		"HRBAC"
+		"HRBAC",
+		"Testbench"
 	]
 }

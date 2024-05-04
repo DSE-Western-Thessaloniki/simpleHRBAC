@@ -17,12 +17,7 @@
 	"Roles": [
 		{
 			"id": 1,
-			"name": "root",
-			"children": [
-				2,
-				3,
-				4
-			]
+			"name": "root"
 		},
 		{
 			"id": 2,
@@ -32,7 +27,8 @@
 				1,
 				2,
 				3
-			]
+			],
+			"parent_id": 1
 		},
 		{
 			"id": 3,
@@ -40,15 +36,13 @@
 			"permissions": [
 				1
 			],
-			"children": [
-				4
-			]
+			"parent_id": 1
 		},
 		{
 			"id": 4,
 			"name": "User",
 			"description": "This is a user role",
-			"parent": 1
+			"parent_id": 3
 		}
 	],
 	"Subjects": [

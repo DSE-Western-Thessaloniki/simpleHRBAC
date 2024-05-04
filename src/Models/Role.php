@@ -2,136 +2,38 @@
 
 namespace Dsewth\SimpleHRBAC\Models;
 
-use Dsewth\SimpleHRBAC\RBAC;
+use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
+use Dsewth\SimpleHRBAC\Observers\RoleObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class Role extends BaseModel
+#[ObservedBy([RoleObserver::class])]
+class Role extends Model
 {
-    private $id = 0;
+    /** @var array */
+    protected $fillable = ['name', 'description', 'parent_id'];
 
-    private string $name = '';
+    public $timestamps = false;
 
-    private string $description = '';
-
-    private $parent = 0;
-
-    private array $children = [];
-
-    protected static string $table = 'roles';
-
-    protected array $columns = ['id', 'name', 'description', 'parent', 'children'];
-
-    protected string $closureTable = 'roles_closure';
-
-    protected array $closureTableColumns = ['parent', 'child', 'depth'];
-
-    protected string $permissionsTable = 'roles_permissions';
-
-    protected array $permissionsTableColumns = ['role_id', 'permission_id'];
-
-    public static function fromRow(array $row): Role
+    public function parent(): BelongsTo
     {
-        $instance = new self();
-
-        $instance->setId($row['id']);
-        $instance->setName($row['name']);
-        $instance->setDescription($row['description'] ?? '');
-        $instance->setParent($row['parent'] ?? -1);
-        $instance->setChildren($row['children'] ?? []);
-
-        return $instance;
+        return $this->belongsTo(Role::class, 'parent_id');
     }
 
-    public function setId($id)
+    public function children()
     {
-        $this->id = $id;
+        $this->tree()->children();
     }
 
-    public function id()
+    public function tree(): ClosureTable
     {
-        return $this->id;
+        return new ClosureTable($this);
     }
 
-    public function setName(string $name): Role
+    public function permissions(): BelongsToMany
     {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    public function setDescription(string $description): Role
-    {
-        $this->description = $description;
-
-        return $this;
-    }
-
-    public function description(): string
-    {
-        return $this->description;
-    }
-
-    public function setParent($id): Role
-    {
-        $this->parent = $id;
-
-        return $this;
-    }
-
-    public function parent()
-    {
-        return $this->parent;
-    }
-
-    public function setChildren(array $children): Role
-    {
-        $this->children = $children;
-
-        return $this;
-    }
-
-    public function addPermission(Permission $permission)
-    {
-        RBAC::getInstance()
-            ->database()
-            ->saveRows($this->permissionsTable, $this->permissionsTableColumns, ['role_id' => $this->id, 'permission_id' => $permission->id()]);
-    }
-
-    public function children(): array
-    {
-        return $this->children;
-    }
-
-    public function permissions(): array
-    {
-        $permissions = RBAC::getInstance()
-            ->database()
-            ->select($this->permissionsTable, ['role_id' => $this->id()]);
-
-        return array_map(function ($row) {
-            return Permission::find($row);
-        }, $permissions);
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'description' => $this->description,
-            'parent' => $this->parent,
-            'children' => $this->children,
-        ];
-    }
-
-    public function save()
-    {
-        [$id] = RBAC::getInstance()->database()->saveRows(static::$table, $this->columns, $this->toArray());
-
-        $this->id = $id;
+        return $this->belongsToMany(Permission::class);
     }
 }
