@@ -6,8 +6,8 @@ use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
 use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 
 #[ObservedBy([RoleObserver::class])]
 class Role extends Model
@@ -17,14 +17,25 @@ class Role extends Model
 
     public $timestamps = false;
 
-    public function parent(): BelongsTo
+    public function parent(): ?Role
     {
-        return $this->belongsTo(Role::class, 'parent_id');
+        return Role::find($this->parent_id);
     }
 
-    public function children()
+    /**
+     * @return Collection<Role>
+     */
+    public function children(): Collection
     {
-        $this->tree()->children();
+        return $this->tree()->children();
+    }
+
+    /**
+     * @return Collection<Role>
+     */
+    public function parents(): Collection
+    {
+        return $this->tree()->parents();
     }
 
     public function tree(): ClosureTable

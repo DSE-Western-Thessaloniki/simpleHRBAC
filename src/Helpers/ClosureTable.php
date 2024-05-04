@@ -78,16 +78,19 @@ class ClosureTable
     public function children(): Collection
     {
         $result = DB::select(
-            "SELECT id
-			FROM {$this->referenceRole->table}
+            "SELECT {$this->referenceRole->getTable()}.id
+			FROM {$this->referenceRole->getTable()}
 			JOIN {$this->table} as t
-			ON {$this->referenceRole->table}.id = {$this->table}.child
-			WHERE t.parent = \"{$this->referenceRole->id}\""
+			ON {$this->referenceRole->getTable()}.id = t.child
+			WHERE t.parent = \"{$this->referenceRole->id}\" AND
+                {$this->referenceRole->getTable()}.id != \"{$this->referenceRole->id}\""
         );
 
-        dd($result);
+        $result = array_map(function ($item) {
+            return Role::find($item->id);
+        }, $result);
 
-        return new Collection();
+        return new Collection($result);
     }
 
     /**
@@ -98,15 +101,18 @@ class ClosureTable
     public function parents(): Collection
     {
         $result = DB::select(
-            "SELECT id
-			FROM {$this->referenceRole->table}
+            "SELECT {$this->referenceRole->getTable()}.id
+			FROM {$this->referenceRole->getTable()}
 			JOIN {$this->table} as t
-			ON {$this->referenceRole->table}.id = {$this->table}.parent
-			WHERE t.child = \"{$this->referenceRole->id}\""
+			ON {$this->referenceRole->getTable()}.id = t.parent
+			WHERE t.child = \"{$this->referenceRole->id}\" AND
+                {$this->referenceRole->getTable()}.id != \"{$this->referenceRole->id}\""
         );
 
-        dd($result);
+        $result = array_map(function ($item) {
+            return Role::find($item->id);
+        }, $result);
 
-        return new Collection();
+        return new Collection($result);
     }
 }
