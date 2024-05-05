@@ -41,7 +41,7 @@ class RoleObserver
      */
     public function restored(Role $role): void
     {
-        // ...
+        $this->created($role);
     }
 
     /**
@@ -49,6 +49,6 @@ class RoleObserver
      */
     public function forceDeleted(Role $role): void
     {
-        // ...
+        $this->deleted($role);
     }
 }
