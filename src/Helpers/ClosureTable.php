@@ -6,6 +6,12 @@ use Dsewth\SimpleHRBAC\Models\Role;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Κλάση υλοποίησης closure table για αναπαράσταση
+ * δενδρικής δομής ρόλων. Κατά τη δημιουργία της κλάσης
+ * δίνουμε τον κόμβο βάση του οποίου θα πραγματοποιήσουμε
+ * τις διάφορες ενέργειες (όχι απαραίτητα τον ριζικό κόμβο).
+ */
 class ClosureTable
 {
     protected ?Role $referenceRole = null;
@@ -19,6 +25,11 @@ class ClosureTable
         }
     }
 
+    /**
+     * Προσθήκη νέου κόμβου μετά τη δημιουργία νέου ρόλου
+     *
+     * @return void
+     */
     public function addToTree()
     {
         DB::insert(
@@ -38,6 +49,9 @@ class ClosureTable
         }
     }
 
+    /**
+     * Αφαίρεση κόμβου από το δέντρο
+     */
     public function removeFromTree(): void
     {
         DB::delete(
@@ -56,7 +70,7 @@ class ClosureTable
     }
 
     /**
-     * Return the children of the referenceRole
+     * Επιστρέφει λίστα των παιδιών του κόμβου
      *
      * @return Collection<Role>
      */
@@ -79,7 +93,7 @@ class ClosureTable
     }
 
     /**
-     * Return the parents of the referenceRole
+     * Επιστρέφει τους γονικούς κόμβους του κόμβου
      *
      * @return Collection<Role>
      */
@@ -99,5 +113,40 @@ class ClosureTable
         }, $result);
 
         return new Collection($result);
+    }
+
+    /**
+     * Μετακίνηση του κόμβου μετά την αλλαγή του πατέρα
+     */
+    public function moveNode(): void
+    {
+        // Αφαίρεσε αρχικά τους κόμβους που σχετίζονται
+        // με τον συγκεκριμένο
+        DB::delete("DELETE FROM {$this->table}
+                WHERE child IN
+                (
+                    SELECT child
+                    FROM {$this->table}
+                    WHERE parent = \"{$this->referenceRole->id}\"
+                ) AND 
+                parent IN
+                (
+                    SELECT parent
+                    FROM {$this->table}
+                    WHERE child = \"{$this->referenceRole->id}\" AND
+                        parent != child
+                )"
+        );
+
+        // και έπειτα χτίσε από την αρχή τις σχέσεις
+        DB::insert(
+            "INSERT INTO {$this->table} (parent, child, depth)
+                SELECT supertree.parent, subtree.child, 
+                    supertree.depth + subtree.depth + 1
+                FROM {$this->table} AS supertree
+                JOIN {$this->table} AS subtree
+                WHERE supertree.child = \"{$this->referenceRole->parent_id}\" AND
+                    subtree.parent = \"{$this->referenceRole->id}\""
+        );
     }
 }

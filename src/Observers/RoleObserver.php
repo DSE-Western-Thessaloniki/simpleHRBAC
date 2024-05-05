@@ -22,6 +22,8 @@ class RoleObserver
         if (! $role->wasChanged('parent_id')) {
             return;
         }
+
+        $role->tree()->moveNode();
     }
 
     /**

@@ -111,3 +111,16 @@ test('RBAC can delete a role from the middle of the tree', function () {
     expect(Role::all()->whereIn('id', [1, 2]))->toHaveCount(2);
     expect(Role::find(1)->children())->toHaveCount(1);
 });
+
+test('RBAC can move a role from the middle of the tree', function () {
+    /** @var RBAC $rbac */
+    $rbac = app(RBAC::class);
+    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+
+    /** @var Role $role */
+    $role = Role::find(3);
+    $role->parent_id = 2;
+    $role->save();
+    expect(Role::all())->toHaveCount(4);
+    expect(Role::find(4)->parents())->toHaveCount(3);
+});
