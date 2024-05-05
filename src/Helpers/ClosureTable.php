@@ -21,21 +21,20 @@ class ClosureTable
 
     public function addToTree()
     {
-        DB::insert("INSERT INTO {$this->table} (parent, child, depth) 
-			VALUES (?, ?, 0)", [
-            $this->referenceRole->id,
-            $this->referenceRole->id,
-        ]);
+        DB::insert(
+            "INSERT INTO {$this->table} (parent, child, depth) 
+			VALUES ({$this->referenceRole->id}, {$this->referenceRole->id}, 0)"
+        );
 
         // Αν έχει γονικό κόμβο
         if ($this->referenceRole->parent_id) {
-            DB::insert("INSERT INTO {$this->table} (parent, child, depth)
+            DB::insert(
+                "INSERT INTO {$this->table} (parent, child, depth)
 				SELECT p.parent, c.child, p.depth + c.depth + 1
 				FROM {$this->table} p, {$this->table} c
-				WHERE p.child =? AND c.parent =?", [
-                $this->referenceRole->parent_id,
-                $this->referenceRole->id,
-            ]);
+				WHERE p.child = \"{$this->referenceRole->parent_id}\" AND 
+                    c.parent = \"{$this->referenceRole->id}\""
+            );
         }
     }
 
@@ -43,9 +42,7 @@ class ClosureTable
     {
         DB::delete(
             "DELETE FROM {$this->table} 
-			WHERE child = ?", [
-                $this->referenceRole->id,
-            ]
+			WHERE child = \"{$this->referenceRole->id}\""
         );
 
         DB::delete(
@@ -53,10 +50,8 @@ class ClosureTable
 			WHERE child IN (
 				SELECT child
 				FROM {$this->table}
-				WHERE parent = ?
-			)", [
-                $this->referenceRole->id,
-            ]
+				WHERE parent = \"{$this->referenceRole->id}\"
+            )"
         );
     }
 
