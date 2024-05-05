@@ -40,7 +40,8 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             __DIR__.'/../../database/migrations/02-subjects.php.stub' => $this->getMigrationFilename('create_subjects_table.php'),
             __DIR__.'/../../database/migrations/03-roles.php.stub' => $this->getMigrationFilename('create_roles_table.php'),
             __DIR__.'/../../database/migrations/04-role_tree.php.stub' => $this->getMigrationFilename('create_role_tree_table.php'),
-            __DIR__.'/../../database/migrations/05-role_permission.php.stub' => $this->getMigrationFilename('create_role_permission_table.php'),
+            __DIR__.'/../../database/migrations/05-permission_role.php.stub' => $this->getMigrationFilename('create_permission_role_table.php'),
+            __DIR__.'/../../database/migrations/06-role_subject.php.stub' => $this->getMigrationFilename('create_role_subject_table.php'),
         ], 'migrations');
     }
 

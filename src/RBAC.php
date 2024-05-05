@@ -90,6 +90,12 @@ class RBAC
                 /** @var Subject $subject */
                 $subject = Subject::create($row);
                 $subject->save();
+
+                if (isset($row['roles'])) {
+                    foreach ($row['roles'] as $role) {
+                        $subject->roles()->save(Role::find($role));
+                    }
+                }
             }
         }
 
