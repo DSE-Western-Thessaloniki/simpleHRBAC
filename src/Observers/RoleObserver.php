@@ -4,6 +4,7 @@ namespace Dsewth\SimpleHRBAC\Observers;
 
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Models\Role;
+use Illuminate\Support\Facades\DB;
 
 class RoleObserver
 {
@@ -25,7 +26,9 @@ class RoleObserver
             throw new RBACException('A node cannot be its own parent');
         }
 
-        $role->tree()->addToTree();
+        DB::transaction(function () use ($role) {
+            $role->tree()->addToTree();
+        });
     }
 
     public function updating(Role $role): void
@@ -56,7 +59,9 @@ class RoleObserver
             return;
         }
 
-        $role->tree()->moveNode();
+        DB::transaction(function () use ($role) {
+            $role->tree()->moveNode();
+        });
     }
 
     public function deleting(Role $role): void
@@ -65,18 +70,19 @@ class RoleObserver
             throw new RBACException('The root node cannot be removed from the tree');
         }
 
-        // Όταν διαγράφουμε έναν ρόλο, μεταφέρουμε τα παιδιά του στον γονέα
-        $role->immediateChildren()->each(function ($child) use ($role) {
-            $child->parent_id = $role->parent_id;
-            $child->save();
-            $child->tree()->moveNode();
+        DB::transaction(function () use ($role) {
+            // Όταν διαγράφουμε έναν ρόλο, μεταφέρουμε τα παιδιά του στον γονέα
+            $role->immediateChildren()->each(function ($child) use ($role) {
+                $child->parent_id = $role->parent_id;
+                $child->save();
+                $child->tree()->moveNode();
+            });
+
+            $role->tree()->removeFromTree();
+
+            $role->subjects()->detach();
+            $role->permissions()->detach();
         });
-
-        $role->tree()->removeFromTree();
-
-        $role->subjects()->detach();
-        $role->permissions()->detach();
-
     }
 
     /**
