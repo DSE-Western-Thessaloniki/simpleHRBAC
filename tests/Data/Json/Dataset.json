@@ -43,6 +43,16 @@
 			"name": "User",
 			"description": "This is a user role",
 			"parent_id": 3
+		},
+		{
+			"id": 5,
+			"name": "User2",
+			"parent_id": 4
+		},
+		{
+			"id": 6,
+			"name": "User3",
+			"parent_id": 5
 		}
 	],
 	"Subjects": [

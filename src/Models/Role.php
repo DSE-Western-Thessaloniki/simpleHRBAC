@@ -33,6 +33,14 @@ class Role extends Model
     /**
      * @return Collection<Role>
      */
+    public function immediateChildren(): Collection
+    {
+        return $this->tree()->immediateChildren();
+    }
+
+    /**
+     * @return Collection<Role>
+     */
     public function parents(): Collection
     {
         return $this->tree()->parents();

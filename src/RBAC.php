@@ -6,29 +6,14 @@ use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
-use Illuminate\Container\Container;
-use Illuminate\Database\Capsule\Manager;
-use Illuminate\Events\Dispatcher;
+use Illuminate\Support\Collection;
 
 class RBAC
 {
-    protected ?Manager $db;
-
     protected array $roles;
 
-    public function __construct(?array $config)
+    public function __construct(protected ?array $config)
     {
-        if (! array_key_exists('database', $config)) {
-            throw new RBACException('No database configuration specified!');
-        }
-
-        if ($config && isset($config['database']) && ! app()->isBooted()) {
-            $this->db = new Manager();
-            $default = $config['database']['default'];
-            $this->db->addConnection($config['database']['connections'][$default]);
-            $this->db->setEventDispatcher(new Dispatcher(new Container));
-            $this->db->bootEloquent();
-        }
     }
 
     public function loadJsonFile(string $filename)
@@ -58,7 +43,6 @@ class RBAC
             foreach ($data['Permissions'] as $row) {
                 /** @var Permission $permission */
                 $permission = Permission::create($row);
-                $permission->save();
             }
         }
 
@@ -70,7 +54,6 @@ class RBAC
             foreach ($data['Roles'] as $row) {
                 /** @var Role $role */
                 $role = Role::create($row);
-                $role->save();
 
                 if (isset($row['permissions'])) {
                     foreach ($row['permissions'] as $permissionId) {
@@ -89,7 +72,6 @@ class RBAC
             foreach ($data['Subjects'] as $row) {
                 /** @var Subject $subject */
                 $subject = Subject::create($row);
-                $subject->save();
 
                 if (isset($row['roles'])) {
                     foreach ($row['roles'] as $role) {
@@ -100,5 +82,36 @@ class RBAC
         }
 
         return true;
+    }
+
+    /**
+     * Επέστρεψε μια συλλογή των δικαιωμάτων ενός υποκειμένου
+     *
+     * @return Dsewth\SimpleHRBAC\Collection<Permission>
+     */
+    public function getPermissionsOf(Subject $subject): Collection
+    {
+        $permissions = new Collection;
+        foreach ($subject->roles as $role) {
+            foreach ($role->permissions as $permission) {
+                $permissions->push($permission);
+            }
+
+            // Πρέπει να ελέγξουμε και τα παιδιά του ρόλου
+            foreach ($role->children() as $child) {
+                foreach ($child->permissions as $permission) {
+                    $permissions->push($permission);
+                }
+            }
+        }
+
+        return $permissions->unique('id');
+    }
+
+    public function can(Subject $subject, Permission $permission): bool
+    {
+        $subjectPermissions = $this->getPermissionsOf($subject);
+
+        return $subjectPermissions->contains('id', $permission->id);
     }
 }

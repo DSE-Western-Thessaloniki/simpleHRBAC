@@ -64,6 +64,19 @@ class RoleObserver
         if ($role->parent_id === null) {
             throw new RBACException('The root node cannot be removed from the tree');
         }
+
+        // Όταν διαγράφουμε έναν ρόλο, μεταφέρουμε τα παιδιά του στον γονέα
+        $role->immediateChildren()->each(function ($child) use ($role) {
+            $child->parent_id = $role->parent_id;
+            $child->save();
+            $child->tree()->moveNode();
+        });
+
+        $role->tree()->removeFromTree();
+
+        $role->subjects()->detach();
+        $role->permissions()->detach();
+
     }
 
     /**
@@ -71,9 +84,6 @@ class RoleObserver
      */
     public function deleted(Role $role): void
     {
-        // Όταν διαγράφουμε έναν ρόλο, διαγράφουμε και όλα τα παιδιά του
-        $role->children()->each(fn ($child) => $child->delete());
-        $role->tree()->removeFromTree();
     }
 
     /**

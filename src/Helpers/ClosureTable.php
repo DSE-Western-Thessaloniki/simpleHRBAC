@@ -82,7 +82,30 @@ class ClosureTable
 			JOIN {$this->table} as t
 			ON {$this->referenceRole->getTable()}.id = t.child
 			WHERE t.parent = \"{$this->referenceRole->id}\" AND
-                {$this->referenceRole->getTable()}.id != \"{$this->referenceRole->id}\""
+                t.child != \"{$this->referenceRole->id}\""
+        );
+
+        $result = array_map(function ($item) {
+            return Role::find($item->id);
+        }, $result);
+
+        return new Collection($result);
+    }
+
+    /**
+     * Επιστρέφει λίστα των παιδιών του κόμβου
+     *
+     * @return Collection<Role>
+     */
+    public function immediateChildren(): Collection
+    {
+        $result = DB::select(
+            "SELECT {$this->referenceRole->getTable()}.id
+			FROM {$this->referenceRole->getTable()}
+			JOIN {$this->table} as t
+			ON {$this->referenceRole->getTable()}.id = t.child
+			WHERE t.parent = \"{$this->referenceRole->id}\" AND
+                t.child != \"{$this->referenceRole->id}\" AND t.depth = 1"
         );
 
         $result = array_map(function ($item) {

@@ -1,7 +1,5 @@
 <?php
 
 return [
-    'database' => [
-        ...config('database'),
-    ],
+    // Προς το παρόν τίποτα
 ];
