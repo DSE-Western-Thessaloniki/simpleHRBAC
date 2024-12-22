@@ -2,6 +2,8 @@
 
 namespace Dsewth\SimpleHRBAC\Models;
 
+use Dsewth\SimpleHRBAC\Factories\SubjectFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -14,7 +16,7 @@ class Subject extends Model
 
     public $timestamps = false;
 
-    public static function newFactory(): PermissionFactory
+    public static function newFactory(): SubjectFactory
     {
         return new SubjectFactory;
     }

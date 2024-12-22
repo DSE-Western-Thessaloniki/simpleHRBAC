@@ -2,6 +2,7 @@
 
 namespace Dsewth\SimpleHRBAC\Models;
 
+use Dsewth\SimpleHRBAC\Factories\RoleFactory;
 use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
 use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -20,7 +21,7 @@ class Role extends Model
 
     public $timestamps = false;
 
-    public static function newFactory(): PermissionFactory
+    public static function newFactory(): RoleFactory
     {
         return new RoleFactory;
     }
