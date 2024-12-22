@@ -5,6 +5,7 @@ namespace Dsewth\SimpleHRBAC\Models;
 use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
 use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
@@ -12,10 +13,17 @@ use Illuminate\Support\Collection;
 #[ObservedBy([RoleObserver::class])]
 class Role extends Model
 {
+    use HasFactory;
+
     /** @var array */
     protected $fillable = ['name', 'description', 'parent_id'];
 
     public $timestamps = false;
+
+    public static function newFactory(): PermissionFactory
+    {
+        return new RoleFactory;
+    }
 
     public function parent(): ?Role
     {
