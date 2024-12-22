@@ -2,7 +2,7 @@
 
 namespace Dsewth\SimpleHRBAC\Providers;
 
-use Dsewth\SimpleHRBAC\RBAC;
+use Dsewth\SimpleHRBAC\Services\RBACService;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
@@ -25,8 +25,8 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             'simple-hrbac'
         );
 
-        $this->app->bind(RBAC::class, function () {
-            return new RBAC(config('simple-hrbac'));
+        $this->app->bind('RBAC', function () {
+            return new RBACService;
         });
     }
 

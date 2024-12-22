@@ -1,20 +1,16 @@
 <?php
 
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
+use Dsewth\SimpleHRBAC\Facades\RBAC;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
-use Dsewth\SimpleHRBAC\RBAC;
 use Illuminate\Support\Collection;
 
 test('RBAC can be initialized with data', function () {
     expect(file_exists(__DIR__.'/../../Data/Json/Dataset.json'))->toBeTrue();
 
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    expect($rbac)->toBeInstanceOf(RBAC::class);
-
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     $permissions = Permission::all();
     expect($permissions->count())
@@ -35,9 +31,7 @@ test('RBAC can be initialized with data', function () {
 });
 
 test('RBAC can get children of a role', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -50,9 +44,7 @@ test('RBAC can get children of a role', function () {
 });
 
 test('RBAC can get the immediate parent of a role', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -66,9 +58,7 @@ test('RBAC can get the immediate parent of a role', function () {
 });
 
 test('RBAC can get parents of a role', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -81,9 +71,7 @@ test('RBAC can get parents of a role', function () {
 });
 
 test('RBAC can delete a leaf of the role tree', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(6);
@@ -95,9 +83,7 @@ test('RBAC can delete a leaf of the role tree', function () {
 });
 
 test('RBAC cannot delete the root of the role tree', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -106,9 +92,7 @@ test('RBAC cannot delete the root of the role tree', function () {
 });
 
 test('RBAC can delete a role from the middle of the tree', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -119,9 +103,7 @@ test('RBAC can delete a role from the middle of the tree', function () {
 });
 
 test('RBAC can move a role from the middle of the tree', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -132,9 +114,6 @@ test('RBAC can move a role from the middle of the tree', function () {
 });
 
 test('RBAC cannot move the root role', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-
     /** @var Role $root */
     $root = Role::create([
         'name' => 'Root',
@@ -155,9 +134,6 @@ test('RBAC cannot move the root role', function () {
 });
 
 test('RBAC can have only one root node', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-
     /** @var Role $role */
     $root = Role::create([
         'name' => 'Root',
@@ -180,9 +156,6 @@ test('RBAC can have only one root node', function () {
 });
 
 test('RBAC nodes cannot be their own parents', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-
     expect(fn () => Role::create([
         'name' => 'Root',
         'description' => 'Root',
@@ -208,9 +181,6 @@ test('RBAC nodes cannot be their own parents', function () {
 });
 
 test('RBAC can update a role info', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-
     /** @var Role $role */
     $role = Role::create([
         'name' => 'Root',
@@ -226,11 +196,9 @@ test('RBAC can update a role info', function () {
 });
 
 test('RBAC can get the permissions of a subject', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
-    $permissions = $rbac->getPermissionsOf(Subject::find(4));
+    $permissions = RBAC::getPermissionsOf(Subject::find(4));
     expect($permissions)
         ->toHaveCount(3)
         ->toContainOnlyInstancesOf(Permission::class);
@@ -240,10 +208,15 @@ test('RBAC can get the permissions of a subject', function () {
 });
 
 test('RBAC can check if a subject has a permission', function () {
-    /** @var RBAC $rbac */
-    $rbac = app(RBAC::class);
-    $rbac->loadJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
 
-    expect($rbac->can(Subject::find(1), Permission::find(1)))->toBeFalse();
-    expect($rbac->can(Subject::find(4), Permission::find(1)))->toBeTrue();
+    expect(RBAC::can(Subject::find(1), Permission::find(1)))->toBeFalse();
+    expect(RBAC::can(Subject::find(4), Permission::find(1)))->toBeTrue();
+});
+
+test('you can create a permission with factory', function () {
+    $permission = Permission::factory()
+        ->create();
+
+    expect($permission)->toBeInstanceOf(Permission::class);
 });
