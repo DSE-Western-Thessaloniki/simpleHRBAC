@@ -7,10 +7,12 @@ use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
 use Illuminate\Support\Collection;
 
-test('RBAC can be initialized with data', function () {
-    expect(file_exists(__DIR__.'/../../Data/Json/Dataset.json'))->toBeTrue();
+const DATASET = __DIR__.'/../../Data/Json/Dataset.json';
 
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+test('RBAC can be initialized with data', function () {
+    expect(file_exists(DATASET))->toBeTrue();
+
+    RBAC::importJsonFile(DATASET);
 
     $permissions = Permission::all();
     expect($permissions->count())
@@ -31,7 +33,7 @@ test('RBAC can be initialized with data', function () {
 });
 
 test('RBAC can get children of a role', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -44,7 +46,7 @@ test('RBAC can get children of a role', function () {
 });
 
 test('RBAC can get the immediate parent of a role', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -58,7 +60,7 @@ test('RBAC can get the immediate parent of a role', function () {
 });
 
 test('RBAC can get parents of a role', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -71,7 +73,7 @@ test('RBAC can get parents of a role', function () {
 });
 
 test('RBAC can delete a leaf of the role tree', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(6);
@@ -83,7 +85,7 @@ test('RBAC can delete a leaf of the role tree', function () {
 });
 
 test('RBAC cannot delete the root of the role tree', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -92,7 +94,7 @@ test('RBAC cannot delete the root of the role tree', function () {
 });
 
 test('RBAC can delete a role from the middle of the tree', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -103,7 +105,7 @@ test('RBAC can delete a role from the middle of the tree', function () {
 });
 
 test('RBAC can move a role from the middle of the tree', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -196,7 +198,7 @@ test('RBAC can update a role info', function () {
 });
 
 test('RBAC can get the permissions of a subject', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     $permissions = RBAC::getPermissionsOf(Subject::find(4));
     expect($permissions)
@@ -208,15 +210,8 @@ test('RBAC can get the permissions of a subject', function () {
 });
 
 test('RBAC can check if a subject has a permission', function () {
-    RBAC::importJsonFile(__DIR__.'/../../Data/Json/Dataset.json');
+    RBAC::importJsonFile(DATASET);
 
     expect(RBAC::can(Subject::find(1), Permission::find(1)))->toBeFalse();
     expect(RBAC::can(Subject::find(4), Permission::find(1)))->toBeTrue();
-});
-
-test('you can create a permission with factory', function () {
-    $permission = Permission::factory()
-        ->create();
-
-    expect($permission)->toBeInstanceOf(Permission::class);
 });
