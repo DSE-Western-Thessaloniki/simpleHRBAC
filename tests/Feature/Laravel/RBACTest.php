@@ -2,6 +2,7 @@
 
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Facades\RBAC;
+use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
@@ -13,7 +14,7 @@ const DATASET = __DIR__.'/../../Data/Json/Dataset.json';
 test('RBAC can be initialized with data', function () {
     expect(file_exists(DATASET))->toBeTrue();
 
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     $permissions = Permission::all();
     expect($permissions->count())
@@ -34,7 +35,7 @@ test('RBAC can be initialized with data', function () {
 });
 
 test('RBAC can get children of a role', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -47,7 +48,7 @@ test('RBAC can get children of a role', function () {
 });
 
 test('RBAC can get the immediate parent of a role', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -61,7 +62,7 @@ test('RBAC can get the immediate parent of a role', function () {
 });
 
 test('RBAC can get parents of a role', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(4);
@@ -74,7 +75,7 @@ test('RBAC can get parents of a role', function () {
 });
 
 test('RBAC can delete a leaf of the role tree', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(6);
@@ -86,7 +87,7 @@ test('RBAC can delete a leaf of the role tree', function () {
 });
 
 test('RBAC cannot delete the root of the role tree', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(1);
@@ -95,7 +96,7 @@ test('RBAC cannot delete the root of the role tree', function () {
 });
 
 test('RBAC can delete a role from the middle of the tree', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -106,7 +107,7 @@ test('RBAC can delete a role from the middle of the tree', function () {
 });
 
 test('RBAC can move a role from the middle of the tree', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     /** @var Role $role */
     $role = Role::find(3);
@@ -199,7 +200,7 @@ test('RBAC can update a role info', function () {
 });
 
 test('RBAC can get the permissions of a subject', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     $permissions = RBAC::getPermissionsOf(Subject::find(4));
     expect($permissions)
@@ -211,7 +212,7 @@ test('RBAC can get the permissions of a subject', function () {
 });
 
 test('RBAC can check if a subject has a permission', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     $user = Subject::where('name', 'Bob')->first();
     expect(RBAC::can($user->id, 'Print'))->toBeFalse();
@@ -221,7 +222,7 @@ test('RBAC can check if a subject has a permission', function () {
 });
 
 test('RBAC uses once() to avoid querying the database again', function () {
-    RBAC::importJsonFile(DATASET);
+    DataHelper::importJsonFile(DATASET);
 
     $user = Subject::where('name', 'Bob')->first();
     expect($user->can('Print'))->toBeFalse();
