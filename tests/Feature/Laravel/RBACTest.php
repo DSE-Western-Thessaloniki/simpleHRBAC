@@ -6,6 +6,7 @@ use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Models\Subject;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 const DATASET = __DIR__.'/../../Data/Json/Dataset.json';
 
@@ -212,6 +213,26 @@ test('RBAC can get the permissions of a subject', function () {
 test('RBAC can check if a subject has a permission', function () {
     RBAC::importJsonFile(DATASET);
 
-    expect(RBAC::can(Subject::find(1), Permission::find(1)))->toBeFalse();
-    expect(RBAC::can(Subject::find(4), Permission::find(1)))->toBeTrue();
+    $user = Subject::where('name', 'Bob')->first();
+    expect(RBAC::can($user->id, 'Print'))->toBeFalse();
+
+    $user2 = Subject::where('name', 'root')->first();
+    expect(RBAC::can($user2->id, 'Print'))->toBeTrue();
+});
+
+test('RBAC uses once() to avoid querying the database again', function () {
+    RBAC::importJsonFile(DATASET);
+
+    $user = Subject::where('name', 'Bob')->first();
+    expect($user->can('Print'))->toBeFalse();
+    DB::enableQueryLog();
+    expect($user->can('Print'))->toBeFalse();
+    expect(DB::getQueryLog())->toBeEmpty();
+
+    $user2 = Subject::where('name', 'root')->first();
+    expect($user2->can('Print'))->toBeTrue();
+    expect(DB::getQueryLog())->not->toBeEmpty();
+    DB::flushQueryLog();
+    expect($user2->can('Print'))->toBeTrue();
+    expect(DB::getQueryLog())->toBeEmpty();
 });

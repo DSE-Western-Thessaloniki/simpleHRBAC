@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool importJsonFile(string $filename)
  * @method static bool importData(array $data)
  * @method static \Dsewth\SimpleHRBAC\Collection<Permission> getPermissionsOf(Subject $subject)
- * @method static bool can(Subject $subject, Permission $permission)
+ * @method static bool can(int $subjectId, string $permission)
  */
 class RBAC extends Facade
 {

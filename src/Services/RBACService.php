@@ -127,10 +127,22 @@ class RBACService
         return $permissions->unique('id');
     }
 
-    public function can(Subject $subject, Permission $permission): bool
+    /**
+     * Επέστρεψε true αν ένα υποκείμενο έχει το δικαίωμα, αλλιώς false
+     *
+     * @param  int  $subjectId  Κωδικός Υποκειμένου
+     * @param  string  $permission  Όνομα δικαιώματος
+     */
+    public function can(int $subjectId, string $permission): bool
     {
-        $subjectPermissions = $this->getPermissionsOf($subject);
+        return once(function () use ($subjectId, $permission) {
+            if (Permission::where('name', $permission)->exists()) {
+                $subjectPermissions = $this->getPermissionsOf(Subject::find($subjectId));
 
-        return $subjectPermissions->contains('id', $permission->id);
+                return $subjectPermissions->contains('name', $permission);
+            }
+
+            return false;
+        });
     }
 }
