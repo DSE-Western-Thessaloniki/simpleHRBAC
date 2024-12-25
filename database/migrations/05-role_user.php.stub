@@ -8,21 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('role_subject', function (Blueprint $table) {
+        Schema::create('role_user', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('role_id');
 			$table->foreign('role_id')
 				->references('id')
 				->on('roles');
-			$table->unsignedBigInteger('subject_id');
-			$table->foreign('subject_id')
+			$table->unsignedBigInteger('user_id');
+			$table->foreign('user_id')
 				->references('id')
-				->on('subjects');
+				->on('users');
         });
     }
 
     public function down(): void
     {
-        Schema::drop('role_subject');
+        Schema::drop('role_user');
     }
 };

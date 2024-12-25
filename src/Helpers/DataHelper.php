@@ -5,10 +5,32 @@ namespace Dsewth\SimpleHRBAC\Helpers;
 use Dsewth\SimpleHRBAC\Exceptions\RBACException;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
-use Dsewth\SimpleHRBAC\Models\Subject;
+use Illuminate\Database\Eloquent\Model;
 
 class DataHelper
 {
+    protected static $userModel;
+
+    /**
+     * Set the user model class to be used by the helper
+     */
+    public static function useUserModel(string $modelClass): void
+    {
+        if (! is_subclass_of($modelClass, Model::class)) {
+            throw new \InvalidArgumentException("The provided class '$modelClass' must be a valid Eloquent model.");
+        }
+
+        static::$userModel = $modelClass;
+    }
+
+    /**
+     * Get the user model class being used
+     */
+    public static function getUserModelClass(): string
+    {
+        return static::$userModel ?? config('package-name.user_model', \App\Models\User::class);
+    }
+
     public static function importJsonFile(string $filename)
     {
         $data = file_get_contents($filename);
@@ -64,23 +86,23 @@ class DataHelper
         }
     }
 
-    private static function importSubjects(array $data): void
+    private static function importUsers(array $data): void
     {
-        if (! isset($data['Subjects'])) {
+        if (! isset($data['Users'])) {
             return;
         }
 
-        if (! is_array($data['Subjects'])) {
-            throw new RBACException("Array key 'Subjects' should be an array");
+        if (! is_array($data['Users'])) {
+            throw new RBACException("Array key 'Users' should be an array");
         }
 
-        foreach ($data['Subjects'] as $row) {
-            /** @var Subject $subject */
-            $subject = Subject::create($row);
+        $userModelClass = static::getUserModelClass();
+        foreach ($data['Users'] as $row) {
+            $user = $userModelClass::create($row);
 
             if (isset($row['roles'])) {
                 foreach ($row['roles'] as $role) {
-                    $subject->roles()->save(Role::find($role));
+                    $user->roles()->save(Role::find($role));
                 }
             }
         }
@@ -90,7 +112,7 @@ class DataHelper
     {
         self::importPermissions($data);
         self::importRoles($data);
-        self::importSubjects($data);
+        self::importUsers($data);
 
         return true;
     }

@@ -80,7 +80,7 @@ class RoleObserver
 
             $role->tree()->removeFromTree();
 
-            $role->subjects()->detach();
+            $role->users()->detach();
             $role->permissions()->detach();
         });
     }

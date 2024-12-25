@@ -4,6 +4,7 @@ namespace Dsewth\SimpleHRBAC\Models;
 
 use Dsewth\SimpleHRBAC\Factories\RoleFactory;
 use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
+use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,8 +66,8 @@ class Role extends Model
         return $this->belongsToMany(Permission::class);
     }
 
-    public function subjects(): BelongsToMany
+    public function users(): BelongsToMany
     {
-        return $this->belongsToMany(Subject::class);
+        return $this->belongsToMany(DataHelper::getUserModelClass());
     }
 }

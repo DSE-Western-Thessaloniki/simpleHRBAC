@@ -2,8 +2,10 @@
 
 namespace Dsewth\SimpleHRBAC\Services;
 
+use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Models\Permission;
-use Dsewth\SimpleHRBAC\Models\Subject;
+use Dsewth\SimpleHRBAC\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class RBACService
@@ -16,14 +18,18 @@ class RBACService
     }
 
     /**
-     * Επέστρεψε μια συλλογή των δικαιωμάτων ενός υποκειμένου
+     * Επέστρεψε μια συλλογή των δικαιωμάτων ενός χρήστη
      *
      * @return Dsewth\SimpleHRBAC\Collection<Permission>
      */
-    public function getPermissionsOf(Subject $subject): Collection
+    public function getPermissionsOf($user): Collection
     {
+        if (! ($user instanceof Model) || ! in_array(HasRoles::class, class_uses($user))) {
+            throw new \InvalidArgumentException('Invalid user model. Expected to implement HasRoles trait. Also, ensure the user model extends the base model.');
+        }
+
         $permissions = new Collection;
-        foreach ($subject->roles as $role) {
+        foreach ($user->roles as $role) {
             foreach ($role->permissions as $permission) {
                 $permissions->push($permission);
             }
@@ -40,18 +46,19 @@ class RBACService
     }
 
     /**
-     * Επέστρεψε true αν ένα υποκείμενο έχει το δικαίωμα, αλλιώς false
+     * Επέστρεψε true αν ένας χρήστης έχει το δικαίωμα, αλλιώς false
      *
-     * @param  int  $subjectId  Κωδικός Υποκειμένου
+     * @param  int  $userId  Αναγνωριστικό χρήστη
      * @param  string  $permission  Όνομα δικαιώματος
      */
-    public function can(int $subjectId, string $permission): bool
+    public function can(int $userId, string $permission): bool
     {
-        return once(function () use ($subjectId, $permission) {
+        return once(function () use ($userId, $permission) {
             if (Permission::where('name', $permission)->exists()) {
-                $subjectPermissions = $this->getPermissionsOf(Subject::find($subjectId));
+                $userModelClass = DataHelper::getUserModelClass();
+                $userPermissions = $this->getPermissionsOf($userModelClass::find($userId));
 
-                return $subjectPermissions->contains('name', $permission);
+                return $userPermissions->contains('name', $permission);
             }
 
             return false;

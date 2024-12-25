@@ -5,11 +5,15 @@ use Dsewth\SimpleHRBAC\Facades\RBAC;
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
-use Dsewth\SimpleHRBAC\Models\Subject;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Workbench\App\Models\User;
 
 const DATASET = __DIR__.'/../../Data/Json/Dataset.json';
+
+beforeAll(function () {
+    DataHelper::useUserModel(User::class);
+});
 
 test('RBAC can be initialized with data', function () {
     expect(file_exists(DATASET))->toBeTrue();
@@ -24,14 +28,14 @@ test('RBAC can be initialized with data', function () {
     expect($roles->count())
         ->toBe(6);
 
-    $subjects = Subject::all();
-    expect($subjects->count())
+    $users = User::all();
+    expect($users->count())
         ->toBe(4);
 
     expect(Permission::find(1)->roles)->toHaveCount(2);
     expect(Role::find(1)->permissions)->toHaveCount(0);
     expect(Role::find(2)->permissions)->toHaveCount(3);
-    expect(Role::find(1)->subjects)->toHaveCount(1);
+    expect(Role::find(1)->users)->toHaveCount(1);
 });
 
 test('RBAC can get children of a role', function () {
@@ -199,10 +203,10 @@ test('RBAC can update a role info', function () {
     expect(Role::find($role->id)->description)->toBe('New description');
 });
 
-test('RBAC can get the permissions of a subject', function () {
+test('RBAC can get the permissions of a user', function () {
     DataHelper::importJsonFile(DATASET);
 
-    $permissions = RBAC::getPermissionsOf(Subject::find(4));
+    $permissions = RBAC::getPermissionsOf(User::find(4));
     expect($permissions)
         ->toHaveCount(3)
         ->toContainOnlyInstancesOf(Permission::class);
@@ -211,29 +215,29 @@ test('RBAC can get the permissions of a subject', function () {
     expect($permissions->where('id', 3)->first())->not->toBeNull();
 });
 
-test('RBAC can check if a subject has a permission', function () {
+test('RBAC can check if a user has a permission', function () {
     DataHelper::importJsonFile(DATASET);
 
-    $user = Subject::where('name', 'Bob')->first();
+    $user = User::where('name', 'Bob')->first();
     expect(RBAC::can($user->id, 'Print'))->toBeFalse();
 
-    $user2 = Subject::where('name', 'root')->first();
+    $user2 = User::where('name', 'root')->first();
     expect(RBAC::can($user2->id, 'Print'))->toBeTrue();
 });
 
 test('RBAC uses once() to avoid querying the database again', function () {
     DataHelper::importJsonFile(DATASET);
 
-    $user = Subject::where('name', 'Bob')->first();
-    expect($user->can('Print'))->toBeFalse();
+    $user = User::where('name', 'Bob')->first();
+    expect($user->canUsingRBAC('Print'))->toBeFalse();
     DB::enableQueryLog();
-    expect($user->can('Print'))->toBeFalse();
+    expect($user->canUsingRBAC('Print'))->toBeFalse();
     expect(DB::getQueryLog())->toBeEmpty();
 
-    $user2 = Subject::where('name', 'root')->first();
-    expect($user2->can('Print'))->toBeTrue();
+    $user2 = User::where('name', 'root')->first();
+    expect($user2->canUsingRBAC('Print'))->toBeTrue();
     expect(DB::getQueryLog())->not->toBeEmpty();
     DB::flushQueryLog();
-    expect($user2->can('Print'))->toBeTrue();
+    expect($user2->canUsingRBAC('Print'))->toBeTrue();
     expect(DB::getQueryLog())->toBeEmpty();
 });
