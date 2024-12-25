@@ -22,7 +22,7 @@
     ],
     "require-dev": {
         "laravel/pint": "^1.14",
-        "pestphp/pest": "^2.34",
+        "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^1.10",
         "orchestra/testbench": "^9.0.4"
     },
@@ -57,7 +57,7 @@
         "serve": [
             "Composer\\Config::disableProcessTimeout",
             "@build",
-            "@php vendor/bin/testbench serve"
+            "@php vendor/bin/testbench serve --ansi"
         ],
         "lint": [
             "@php vendor/bin/pint",
