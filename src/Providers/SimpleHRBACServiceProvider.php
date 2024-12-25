@@ -17,7 +17,11 @@ class SimpleHRBACServiceProvider extends ServiceProvider
         }
 
         $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+        $this->setUserModel();
+    }
 
+    public function setUserModel(): void
+    {
         if (class_exists(config('simple-hrbac.user_model', \App\Models\User::class))) {
             DataHelper::useUserModel(config('simple-hrbac.user_model', \App\Models\User::class));
         }
