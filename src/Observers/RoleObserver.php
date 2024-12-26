@@ -75,7 +75,6 @@ class RoleObserver
             $role->immediateChildren()->each(function ($child) use ($role) {
                 $child->parent_id = $role->parent_id;
                 $child->save();
-                $child->tree()->moveNode();
             });
 
             $role->tree()->removeFromTree();
@@ -88,9 +87,7 @@ class RoleObserver
     /**
      * Handle the Role "deleted" event.
      */
-    public function deleted(Role $role): void
-    {
-    }
+    public function deleted(Role $role): void {}
 
     /**
      * Handle the Role "restored" event.

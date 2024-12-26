@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Workbench\App\Models\User;
 
-const DATASET = __DIR__.'/../../Data/Json/Dataset.json';
+require_once 'Constants.php';
 
 beforeAll(function () {
     DataHelper::useUserModel(User::class);
@@ -88,6 +88,19 @@ test('RBAC can delete a leaf of the role tree', function () {
     expect(Role::find(1)->children())
         ->toHaveCount(4);
     expect(Role::find(1)->children()->where('id', 6))->toHaveCount(0);
+    expect(DB::table('role_tree')
+        ->where('parent', 6)
+        ->orWhere('child', 6)
+        ->get())
+        ->toBeEmpty();
+    expect(DB::table('role_user')
+        ->where('role_id', 6)
+        ->get())
+        ->toBeEmpty();
+    expect(DB::table('permission_role')
+        ->where('role_id', 6)
+        ->get())
+        ->toBeEmpty();
 });
 
 test('RBAC cannot delete the root of the role tree', function () {
@@ -107,7 +120,28 @@ test('RBAC can delete a role from the middle of the tree', function () {
     $role->delete();
     expect(Role::all())->toHaveCount(5);
     expect(Role::all()->whereIn('id', [1, 2, 4, 5, 6]))->toHaveCount(5);
+    expect(Role::find(4)->parent_id)->toBe(1);
     expect(Role::find(1)->children())->toHaveCount(4);
+    expect(DB::table('role_tree')
+        ->where('parent', 3)
+        ->orWhere('child', 3)
+        ->get())
+        ->toBeEmpty();
+    expect(DB::table('role_tree')
+        ->select('depth')
+        ->where('child', 4)
+        ->whereNot('parent', 4)
+        ->first()
+        ->depth)
+        ->toBe(1);
+    expect(DB::table('role_user')
+        ->where('role_id', 3)
+        ->get())
+        ->toBeEmpty();
+    expect(DB::table('permission_role')
+        ->where('role_id', 3)
+        ->get())
+        ->toBeEmpty();
 });
 
 test('RBAC can move a role from the middle of the tree', function () {
@@ -240,4 +274,34 @@ test('RBAC uses once() to avoid querying the database again', function () {
     DB::flushQueryLog();
     expect($user2->canUsingRBAC('Print'))->toBeTrue();
     expect(DB::getQueryLog())->toBeEmpty();
+});
+
+test("RBAC returns false if permission doesn't exist", function () {
+    $user = User::factory()->create();
+    $user->roles()->attach(Role::factory()->create());
+    expect(RBAC::can($user->id, 'NonexistentPermission'))->toBeFalse();
+
+    $permission = Permission::factory()->create(['name' => 'NonexistentPermission']);
+    // Πρέπει να επανεκκινήσουμε την εφαρμογή για να διαγράψουμε τα αποτελέσματα
+    // του once(). Φυσικά δε θέλουμε να ξαναχτίσουμε την βάση από την αρχή.
+    $this->refreshApplication();
+    $this->restoreInMemoryDatabase();
+    expect(RBAC::can($user->id, 'NonexistentPermission'))->toBeFalse();
+
+    $user->roles()->first()->permissions()->attach($permission);
+    $this->refreshApplication();
+    $this->restoreInMemoryDatabase();
+    expect(RBAC::can($user->id, 'NonexistentPermission'))->toBeTrue();
+});
+
+test('RBAC throws an exception when trying to get permissions of a non-existent user', function () {
+    expect(fn () => RBAC::getPermissionsOf(User::find(1)))->toThrow(InvalidArgumentException::class);
+});
+
+test('RBAC throws an exception when trying to get permissions of an invalid model', function () {
+    // Δεν έχει το HasRoles trait
+    expect(fn () => RBAC::getPermissionsOf(\Orchestra\Testbench\Factories\UserFactory::new()))->toThrow(InvalidArgumentException::class);
+
+    // Δεν είναι model
+    expect(fn () => RBAC::getPermissionsOf(Role::factory()->create()))->toThrow(InvalidArgumentException::class);
 });

@@ -33,6 +33,10 @@ class DataHelper
 
     public static function importJsonFile(string $filename)
     {
+        if (! file_exists($filename) || ! is_readable($filename)) {
+            return false;
+        }
+
         $data = file_get_contents($filename);
         if (! $data) {
             // File read failed
