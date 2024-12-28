@@ -76,16 +76,7 @@ class RBACService
         return $permissions
             ->roles
             ->map(function ($role) {
-                $roles = collect();
-                $currentRole = $role;
-                while ($currentRole->parent_id !== null) {
-                    $roles->push($currentRole);
-                    $currentRole = $currentRole->parent();
-                }
-
-                $roles->push($currentRole);
-
-                return $roles;
+                return $role->parents()->push($role);
             })
             ->flatten()
             ->unique('id')
