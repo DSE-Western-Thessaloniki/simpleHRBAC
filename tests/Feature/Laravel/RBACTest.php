@@ -314,4 +314,6 @@ test('RBAC can return users that have specific permission', function () {
     expect($users->contains('id', 2))->toBeTrue();
     expect($users->contains('id', 3))->toBeTrue();
     expect($users->contains('id', 4))->toBeTrue();
+
+    expect(RBAC::getUsersWithPermission('NonexistentPermission'))->toBeEmpty();
 });

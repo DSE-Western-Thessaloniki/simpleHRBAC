@@ -70,7 +70,7 @@ class RBACService
         $permissions = Permission::where('name', $permission)->first();
 
         if (! $permissions) {
-            throw new \InvalidArgumentException('Permission not found.');
+            return collect();
         }
 
         return $permissions
