@@ -305,3 +305,13 @@ test('RBAC throws an exception when trying to get permissions of an invalid mode
     // Δεν είναι model
     expect(fn () => RBAC::getPermissionsOf(Role::factory()->create()))->toThrow(InvalidArgumentException::class);
 });
+
+test('RBAC can return users that have specific permission', function () {
+    DataHelper::importJsonFile(DATASET);
+
+    $users = RBAC::getUsersWithPermission('Print');
+    expect($users)->toHaveCount(3);
+    expect($users->contains('id', 2))->toBeTrue();
+    expect($users->contains('id', 3))->toBeTrue();
+    expect($users->contains('id', 4))->toBeTrue();
+});

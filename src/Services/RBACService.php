@@ -64,4 +64,34 @@ class RBACService
             return false;
         });
     }
+
+    public function getUsersWithPermission(string $permission): Collection
+    {
+        $permissions = Permission::where('name', $permission)->first();
+
+        if (! $permissions) {
+            throw new \InvalidArgumentException('Permission not found.');
+        }
+
+        return $permissions
+            ->roles
+            ->map(function ($role) {
+                $roles = collect();
+                $currentRole = $role;
+                while ($currentRole->parent_id !== null) {
+                    $roles->push($currentRole);
+                    $currentRole = $currentRole->parent();
+                }
+
+                $roles->push($currentRole);
+
+                return $roles;
+            })
+            ->flatten()
+            ->unique('id')
+            ->flatMap(function ($role) {
+                return $role->users;
+            })
+            ->unique('id');
+    }
 }
