@@ -20,7 +20,7 @@ class RBACService
     /**
      * Επέστρεψε μια συλλογή των δικαιωμάτων ενός χρήστη
      *
-     * @return Dsewth\SimpleHRBAC\Collection<Permission>
+     * @return Illuminate\Support\Collection<Permission>
      */
     public function getPermissionsOf($user): Collection
     {
