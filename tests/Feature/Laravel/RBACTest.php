@@ -247,6 +247,10 @@ test('RBAC can get the permissions of a user', function () {
     expect($permissions->where('id', 1)->first())->not->toBeNull();
     expect($permissions->where('id', 2)->first())->not->toBeNull();
     expect($permissions->where('id', 3)->first())->not->toBeNull();
+
+    // Δοκίμασε την εναλλακτική οδό
+    $permissions2 = User::find(4)->permissions();
+    expect($permissions2->diff($permissions))->toBeEmpty();
 });
 
 test('RBAC can check if a user has a permission', function () {
