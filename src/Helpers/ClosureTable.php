@@ -55,20 +55,20 @@ class ClosureTable
      */
     public function removeFromTree(): void
     {
-        DB::delete(
-            "DELETE FROM {$this->table}
-			WHERE child = ?",
+        // Βρες όλους τους απογόνους του κόμβου
+        $descendants = DB::select(
+            "SELECT child FROM {$this->table} WHERE parent = ?",
             [$this->referenceRole->id]
         );
+        $descendantIds = array_map(fn ($r) => $r->child, $descendants);
+        $allIds = array_unique(array_merge([$this->referenceRole->id], $descendantIds));
 
+        // Αφαίρεση όλων των γραμμών που αναφέρονται σε αυτούς τους κόμβους
         DB::delete(
-            "DELETE FROM {$this->table}
-			WHERE child IN (
-				SELECT child
-				FROM {$this->table}
-				WHERE parent = ?
-            )",
-            [$this->referenceRole->id]
+            "DELETE FROM {$this->table} WHERE child IN (".implode(',', array_fill(0, count($allIds), '?')).')', $allIds
+        );
+        DB::delete(
+            "DELETE FROM {$this->table} WHERE parent IN (".implode(',', array_fill(0, count($allIds), '?')).')', $allIds
         );
     }
 
