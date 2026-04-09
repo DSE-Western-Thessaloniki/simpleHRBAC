@@ -1,0 +1,38 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: [11, 12, 13]
+        php: ['8.2', '8.3', '8.4']
+        exclude:
+          - laravel: 11
+            php: '8.4'
+
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require orchestra/testbench:^${{ matrix.laravel }}.0 --no-interaction --no-update
+          composer update --prefer-stable --no-interaction --no-progress
+
+      - name: Run tests
+        run: composer test
