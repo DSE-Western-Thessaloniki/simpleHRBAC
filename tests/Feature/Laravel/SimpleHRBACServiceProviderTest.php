@@ -9,9 +9,10 @@ it('should publish config and migrations', function () {
     expect($config[array_key_first($config)])->toBe(config_path('simple-hrbac.php'));
 
     $migrations = $provider->pathsToPublish(group: 'migrations');
+    $stubs = [];
     $dir = dir(getcwd().'/database/migrations');
     while (false !== ($entry = $dir->read())) {
-        if (str_ends_with($entry, '.stub') !== false) {
+        if (str_ends_with($entry, '.php') !== false) {
             $stubs[] = $entry;
         }
     }
