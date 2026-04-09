@@ -7,6 +7,7 @@ use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RBACService
 {
@@ -28,21 +29,23 @@ class RBACService
             throw new \InvalidArgumentException('Invalid user model. Expected to implement HasRoles trait. Also, ensure the user model extends the base model.');
         }
 
-        $permissions = new Collection;
-        foreach ($user->roles as $role) {
-            foreach ($role->permissions as $permission) {
-                $permissions->push($permission);
-            }
+        $roleIds = $user->roles()->pluck('roles.id');
 
-            // Πρέπει να ελέγξουμε και τα παιδιά του ρόλου
-            foreach ($role->children() as $child) {
-                foreach ($child->permissions as $permission) {
-                    $permissions->push($permission);
-                }
-            }
+        if ($roleIds->isEmpty()) {
+            return collect();
         }
 
-        return $permissions->unique('id');
+        // Βρες όλους τους ρόλους των απογόνων
+        $allRoleIds = DB::table('role_tree')
+            ->whereIn('parent', $roleIds)
+            ->pluck('child')
+            ->unique()
+            ->merge($roleIds);
+
+        // Βρες όλα τα δικαιώματα με μια ερώτηση
+        return Permission::whereHas('roles', function ($q) use ($allRoleIds) {
+            $q->whereIn('role_id', $allRoleIds);
+        })->get();
     }
 
     /**
