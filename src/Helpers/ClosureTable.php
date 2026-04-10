@@ -3,6 +3,7 @@
 namespace Dsewth\SimpleHRBAC\Helpers;
 
 use Dsewth\SimpleHRBAC\Models\Role;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -32,20 +33,23 @@ class ClosureTable
      */
     public function addToTree()
     {
-        DB::insert(
-            "INSERT INTO {$this->table} (parent, child, depth) VALUES (?, ?, 0)",
-            [$this->referenceRole->id, $this->referenceRole->id]
-        );
+        DB::table($this->table)->insert([
+            'parent' => $this->referenceRole->id,
+            'child' => $this->referenceRole->id,
+            'depth' => 0,
+        ]);
 
         // Αν έχει γονικό κόμβο
         if ($this->referenceRole->parent_id) {
-            DB::insert(
-                "INSERT INTO {$this->table} (parent, child, depth)
-				SELECT p.parent, c.child, p.depth + c.depth + 1
-				FROM {$this->table} p, {$this->table} c
-				WHERE p.child = ? AND
-                    c.parent = ?",
-                [$this->referenceRole->parent_id, $this->referenceRole->id]
+            DB::table($this->table)->insertUsing(
+                ['parent', 'child', 'depth'],
+                function (Builder $query) {
+                    $query->select('p.parent', 'c.child', DB::raw('p.depth + c.depth + 1'))
+                        ->from("{$this->table} as p")
+                        ->crossJoin("{$this->table} as c")
+                        ->where('p.child', $this->referenceRole->parent_id)
+                        ->where('c.parent', $this->referenceRole->id);
+                }
             );
         }
     }
@@ -56,20 +60,20 @@ class ClosureTable
     public function removeFromTree(): void
     {
         // Βρες όλους τους απογόνους του κόμβου
-        $descendants = DB::select(
-            "SELECT child FROM {$this->table} WHERE parent = ?",
-            [$this->referenceRole->id]
-        );
-        $descendantIds = array_map(fn ($r) => $r->child, $descendants);
+        $descendants = DB::table($this->table)
+            ->select('child')
+            ->where('parent', $this->referenceRole->id)
+            ->get();
+        $descendantIds = $descendants->pluck('child')->toArray();
         $allIds = array_unique(array_merge([$this->referenceRole->id], $descendantIds));
 
         // Αφαίρεση όλων των γραμμών που αναφέρονται σε αυτούς τους κόμβους
-        DB::delete(
-            "DELETE FROM {$this->table} WHERE child IN (".implode(',', array_fill(0, count($allIds), '?')).')', $allIds
-        );
-        DB::delete(
-            "DELETE FROM {$this->table} WHERE parent IN (".implode(',', array_fill(0, count($allIds), '?')).')', $allIds
-        );
+        DB::table($this->table)
+            ->whereIn('child', $allIds)
+            ->delete();
+        DB::table($this->table)
+            ->whereIn('parent', $allIds)
+            ->delete();
     }
 
     /**
@@ -79,21 +83,17 @@ class ClosureTable
      */
     public function children(): Collection
     {
-        $result = DB::select(
-            "SELECT {$this->referenceRole->getTable()}.id
-			FROM {$this->referenceRole->getTable()}
-			JOIN {$this->table} as t
-			ON {$this->referenceRole->getTable()}.id = t.child
-			WHERE t.parent = ? AND
-                t.child != ?",
-            [$this->referenceRole->id, $this->referenceRole->id]
-        );
+        $roleTable = $this->referenceRole->getTable();
 
-        $result = array_map(function ($item) {
-            return Role::find($item->id);
-        }, $result);
+        $ids = DB::table($this->table)
+            ->join($roleTable, "{$roleTable}.id", '=', "{$this->table}.child")
+            ->where("{$this->table}.parent", $this->referenceRole->id)
+            ->where("{$this->table}.child", '!=', $this->referenceRole->id)
+            ->pluck("{$roleTable}.id");
 
-        return new Collection($result);
+        $result = Role::find($ids);
+
+        return $result instanceof Collection ? $result : new Collection($result);
     }
 
     /**
@@ -103,21 +103,18 @@ class ClosureTable
      */
     public function immediateChildren(): Collection
     {
-        $result = DB::select(
-            "SELECT {$this->referenceRole->getTable()}.id
-			FROM {$this->referenceRole->getTable()}
-			JOIN {$this->table} as t
-			ON {$this->referenceRole->getTable()}.id = t.child
-			WHERE t.parent = ? AND
-                t.child != ? AND t.depth = 1",
-            [$this->referenceRole->id, $this->referenceRole->id]
-        );
+        $roleTable = $this->referenceRole->getTable();
 
-        $result = array_map(function ($item) {
-            return Role::find($item->id);
-        }, $result);
+        $ids = DB::table($this->table)
+            ->join($roleTable, "{$roleTable}.id", '=', "{$this->table}.child")
+            ->where("{$this->table}.parent", $this->referenceRole->id)
+            ->where("{$this->table}.child", '!=', $this->referenceRole->id)
+            ->where("{$this->table}.depth", 1)
+            ->pluck("{$roleTable}.id");
 
-        return new Collection($result);
+        $result = Role::find($ids);
+
+        return $result instanceof Collection ? $result : new Collection($result);
     }
 
     /**
@@ -127,21 +124,17 @@ class ClosureTable
      */
     public function parents(): Collection
     {
-        $result = DB::select(
-            "SELECT {$this->referenceRole->getTable()}.id
-			FROM {$this->referenceRole->getTable()}
-			JOIN {$this->table} as t
-			ON {$this->referenceRole->getTable()}.id = t.parent
-			WHERE t.child = ? AND
-                {$this->referenceRole->getTable()}.id != ?",
-            [$this->referenceRole->id, $this->referenceRole->id]
-        );
+        $roleTable = $this->referenceRole->getTable();
 
-        $result = array_map(function ($item) {
-            return Role::find($item->id);
-        }, $result);
+        $ids = DB::table($this->table)
+            ->join($roleTable, "{$roleTable}.id", '=', "{$this->table}.parent")
+            ->where("{$this->table}.child", $this->referenceRole->id)
+            ->where("{$roleTable}.id", '!=', $this->referenceRole->id)
+            ->pluck("{$roleTable}.id");
 
-        return new Collection($result);
+        $result = Role::find($ids);
+
+        return $result instanceof Collection ? $result : new Collection($result);
     }
 
     /**
@@ -169,15 +162,15 @@ class ClosureTable
         );
 
         // και έπειτα χτίσε από την αρχή τις σχέσεις
-        DB::insert(
-            "INSERT INTO {$this->table} (parent, child, depth)
-                SELECT supertree.parent, subtree.child,
-                    supertree.depth + subtree.depth + 1
-                FROM {$this->table} AS supertree
-                JOIN {$this->table} AS subtree
-                WHERE supertree.child = ? AND
-                    subtree.parent = ?",
-            [$this->referenceRole->parent_id, $this->referenceRole->id]
+        DB::table($this->table)->insertUsing(
+            ['parent', 'child', 'depth'],
+            function ($query) {
+                $query->select('supertree.parent', 'subtree.child', DB::raw('supertree.depth + subtree.depth + 1'))
+                    ->from("{$this->table} as supertree")
+                    ->crossJoin("{$this->table} as subtree")
+                    ->where('supertree.child', $this->referenceRole->parent_id)
+                    ->where('subtree.parent', $this->referenceRole->id);
+            }
         );
     }
 }
