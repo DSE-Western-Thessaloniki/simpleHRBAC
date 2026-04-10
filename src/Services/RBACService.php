@@ -4,6 +4,7 @@ namespace Dsewth\SimpleHRBAC\Services;
 
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Models\Permission;
+use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -153,7 +154,7 @@ class RBACService
 
         return $permissions
             ->roles
-            ->map(function ($role) {
+            ->map(function (Role $role) {
                 return $role->parents()->push($role);
             })
             ->flatten()
