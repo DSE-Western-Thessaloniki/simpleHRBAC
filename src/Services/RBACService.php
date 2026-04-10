@@ -20,17 +20,17 @@ class RBACService
         $this->config = array_merge(config('simple-hrbac', []), $config);
     }
 
-    public static function cacheKey(int $userId, string $permission): string
+    private static function cacheKey(int $userId, string $permission): string
     {
         return "rbac:can:{$userId}:{$permission}";
     }
 
-    public static function userCacheTag(int $userId): string
+    private static function userCacheTag(int $userId): string
     {
         return "rbac:user:{$userId}";
     }
 
-    public static function permissionCacheTag(string $permission): string
+    private static function permissionCacheTag(string $permission): string
     {
         return "rbac:permission:{$permission}";
     }
