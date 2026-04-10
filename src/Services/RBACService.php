@@ -7,6 +7,7 @@ use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RBACService
@@ -18,10 +19,26 @@ class RBACService
         $this->config = array_merge(config('simple-hrbac', []), $config);
     }
 
+    public static function cacheKey(int $userId, string $permission): string
+    {
+        return "rbac:can:{$userId}:{$permission}";
+    }
+
+    public static function userCacheTag(int $userId): string
+    {
+        return "rbac:user:{$userId}";
+    }
+
+    public static function permissionCacheTag(string $permission): string
+    {
+        return "rbac:permission:{$permission}";
+    }
+
     /**
      * Επέστρεψε μια συλλογή των δικαιωμάτων ενός χρήστη
      *
-     * @return Illuminate\Support\Collection<Permission>
+     * @param  Model  $user  Ο χρήστης για τον οποίο θέλουμε να πάρουμε τα δικαιώματα
+     * @return Collection<Permission>
      */
     public function getPermissionsOf($user): Collection
     {
@@ -56,16 +73,74 @@ class RBACService
      */
     public function can(int $userId, string $permission): bool
     {
-        return once(function () use ($userId, $permission) {
-            if (Permission::where('name', $permission)->exists()) {
-                $userModelClass = DataHelper::getUserModelClass();
-                $userPermissions = $this->getPermissionsOf($userModelClass::find($userId));
+        $cacheKey = self::cacheKey($userId, $permission);
+        $userTag = self::userCacheTag($userId);
+        $permissionTag = self::permissionCacheTag($permission);
 
-                return $userPermissions->contains('name', $permission);
+        try {
+            return Cache::tags([$userTag, $permissionTag])->rememberForever($cacheKey, function () use ($userId, $permission) {
+                return $this->canWithoutCache($userId, $permission);
+            });
+        } catch (\Exception $e) {
+            return $this->canWithoutCache($userId, $permission);
+        }
+    }
+
+    protected function canWithoutCache(int $userId, string $permission): bool
+    {
+        if (! Permission::where('name', $permission)->exists()) {
+            return false;
+        }
+
+        $userModelClass = DataHelper::getUserModelClass();
+        $user = $userModelClass::find($userId);
+
+        if (! $user) {
+            return false;
+        }
+
+        $userPermissions = $this->getPermissionsOf($user);
+
+        return $userPermissions->contains('name', $permission);
+    }
+
+    public function invalidateUserCache(int $userId): void
+    {
+        try {
+            Cache::tags([self::userCacheTag($userId)])->flush();
+        } catch (\Exception $e) {
+        }
+    }
+
+    public function invalidatePermissionCache(string $permission): void
+    {
+        try {
+            Cache::tags([self::permissionCacheTag($permission)])->flush();
+        } catch (\Exception $e) {
+        }
+    }
+
+    public function invalidateAllCache(): void
+    {
+        try {
+            $permissionNames = Permission::pluck('name');
+            $allTags = [];
+
+            foreach ($permissionNames as $permName) {
+                $allTags[] = self::permissionCacheTag($permName);
             }
 
-            return false;
-        });
+            $userModelClass = DataHelper::getUserModelClass();
+            $userIds = $userModelClass::query()->pluck('id');
+            foreach ($userIds as $userId) {
+                $allTags[] = self::userCacheTag($userId);
+            }
+
+            if (! empty($allTags)) {
+                Cache::tags($allTags)->flush();
+            }
+        } catch (\Exception $e) {
+        }
     }
 
     public function getUsersWithPermission(string $permission): Collection

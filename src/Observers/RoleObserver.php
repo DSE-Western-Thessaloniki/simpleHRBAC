@@ -62,6 +62,8 @@ class RoleObserver
         DB::transaction(function () use ($role) {
             $role->tree()->moveNode();
         });
+
+        $this->invalidateCacheForRole($role);
     }
 
     public function deleting(Role $role): void
@@ -82,5 +84,35 @@ class RoleObserver
             $role->users()->detach();
             $role->permissions()->detach();
         });
+
+        $this->invalidateCacheForRole($role);
+    }
+
+    private function invalidateCacheForRole(Role $role): void
+    {
+        if (! app()->bound('rbac.service')) {
+            return;
+        }
+
+        try {
+            $rbacService = app('rbac.service');
+
+            $descendantIds = DB::table('role_tree')
+                ->where('parent', $role->id)
+                ->pluck('child')
+                ->unique();
+
+            $roleIds = $descendantIds->push($role->id)->unique();
+
+            $userIds = DB::table('role_user')
+                ->whereIn('role_id', $roleIds)
+                ->pluck('user_id')
+                ->unique();
+
+            foreach ($userIds as $userId) {
+                $rbacService->invalidateUserCache($userId);
+            }
+        } catch (\Exception $e) {
+        }
     }
 }

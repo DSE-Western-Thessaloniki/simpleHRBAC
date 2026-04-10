@@ -68,6 +68,8 @@ class Role extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(DataHelper::getUserModelClass());
+        return $this->belongsToMany(DataHelper::getUserModelClass())
+            ->using(RoleUser::class)
+            ->withPivot('role_id');
     }
 }

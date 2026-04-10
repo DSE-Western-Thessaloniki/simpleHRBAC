@@ -34,9 +34,11 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             'simple-hrbac'
         );
 
-        $this->app->bind('RBAC', function () {
-            return new RBACService;
+        $this->app->singleton('rbac.service', function ($app) {
+            return new RBACService($app['config']['simple-hrbac'] ?? []);
         });
+
+        $this->app->alias('rbac.service', 'RBAC');
     }
 
     public function offerPublishing()
