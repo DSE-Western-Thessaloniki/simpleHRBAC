@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,18 +7,43 @@ on:
     branches: [main]
 
 jobs:
-  test:
+
+  generate-matrix:
+    name: Generate Laravel Matrix
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: matrix
+        run: |
+          versions=$(jq -r '.require["illuminate/support"]' composer.json)
+
+          laravel_versions=$(echo $versions | grep -oE '[0-9]+' | sort -u)
+
+          json="["
+          for v in $laravel_versions; do
+            tb=$((v-2))
+            json="$json{\"laravel\":$v,\"testbench\":$tb},"
+          done
+          json="${json%,}]"
+
+          echo "matrix=$json" >> $GITHUB_OUTPUT
+
+  tests:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        laravel: [11, 12, 13]
-        php: ['8.2', '8.3', '8.4']
-        exclude:
-          - laravel: 11
-            php: '8.4'
+        php: ['8.2','8.3','8.4']
+        dependency-version: [prefer-stable, prefer-lowest]
+        include: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 
-    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }}
+    name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }} / ${{ matrix.dependency-version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +53,25 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ matrix.php }}-${{ matrix.dependency-version }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ matrix.php }}-
+
+      - name: Install Testbench
+        run: composer require orchestra/testbench:^${{ matrix.testbench }}.0 --no-interaction --no-update
 
       - name: Install dependencies
-        run: |
-          composer require orchestra/testbench:^${{ matrix.laravel }}.0 --no-interaction --no-update
-          composer update --prefer-stable --no-interaction --no-progress
+        run: composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
 
       - name: Run tests
         run: composer test
