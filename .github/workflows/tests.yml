@@ -44,10 +44,8 @@ jobs:
           done
 
           json="${json%,}]}"
+          echo $json | jq
           echo "matrix=$json" >> $GITHUB_OUTPUT
-
-      - name: Print matrix
-        run: echo '${{ needs.generate-matrix.outputs.matrix }}'
 
   tests:
     needs: generate-matrix
