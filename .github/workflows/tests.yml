@@ -21,15 +21,29 @@ jobs:
         run: |
           versions=$(jq -r '.require["illuminate/database"]' composer.json)
 
-          laravel_versions=$(echo $versions | sed -re 's/\.[0-9]+//g' | grep -oE '[0-9]+' | sort -u)
+          laravel_versions=$(echo "$versions" \
+            | jq -R 'split("|") | map(gsub("[^0-9.]";"") | split(".")[0] | tonumber) | .[]')
 
-          json="["
+          json='{"include":['
+
           for v in $laravel_versions; do
             tb=$((v-2))
-            json="$json{\"laravel\":$v,\"testbench\":$tb},"
-          done
-          json="${json%,}]"
 
+            # PHP compatibility rules
+            if [ "$v" -ge 13 ]; then
+              phps="8.3 8.4"
+            else
+              phps="8.2 8.3 8.4"
+            fi
+
+            for php in $phps; do
+              for dep in prefer-stable prefer-lowest; do
+                json="$json{\"laravel\":$v,\"testbench\":$tb,\"php\":\"$php\",\"dependency-version\":\"$dep\"},"
+              done
+            done
+          done
+
+          json="${json%,}]}"
           echo "matrix=$json" >> $GITHUB_OUTPUT
 
   tests:
@@ -42,6 +56,9 @@ jobs:
         php: ['8.2','8.3','8.4']
         dependency-version: [prefer-stable, prefer-lowest]
         include: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+
+  - name: Print matrix
+    run: echo '${{ needs.generate-matrix.outputs.matrix }}'
 
     name: Laravel ${{ matrix.laravel }} / PHP ${{ matrix.php }} / ${{ matrix.dependency-version }}
 
