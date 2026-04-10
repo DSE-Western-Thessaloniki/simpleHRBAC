@@ -2,7 +2,6 @@
 
 namespace Dsewth\SimpleHRBAC\Providers;
 
-use App\Models\User;
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Services\RBACService;
 use Illuminate\Filesystem\Filesystem;
@@ -23,8 +22,8 @@ class SimpleHRBACServiceProvider extends ServiceProvider
 
     public function setUserModel(): void
     {
-        if (class_exists(config('simple-hrbac.user_model', User::class))) {
-            DataHelper::useUserModel(config('simple-hrbac.user_model', User::class));
+        if (class_exists(config('simple-hrbac.user_model', '\App\Models\User'))) {
+            DataHelper::useUserModel(config('simple-hrbac.user_model', '\App\Models\User'));
         }
     }
 
