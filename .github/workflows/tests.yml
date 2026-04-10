@@ -19,7 +19,7 @@ jobs:
 
       - id: matrix
         run: |
-          versions=$(jq -r '.require["illuminate/support"]' composer.json)
+          versions=$(jq -r '.require["illuminate/database"]' composer.json)
 
           laravel_versions=$(echo $versions | grep -oE '[0-9]+' | sort -u)
 
