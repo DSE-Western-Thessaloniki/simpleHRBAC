@@ -28,7 +28,7 @@ class DataHelper
      */
     public static function getUserModelClass(): string
     {
-        return static::$userModel ?? config('package-name.user_model', \App\Models\User::class);
+        return static::$userModel ?? config('package-name.user_model', '\App\Models\User');
     }
 
     public static function importJsonFile(string $filename)
