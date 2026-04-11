@@ -7,6 +7,7 @@ use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Orchestra\Testbench\Factories\UserFactory;
 use Workbench\App\Models\User;
 
 require_once 'Constants.php';
@@ -56,12 +57,12 @@ test('RBAC can get the immediate parent of a role', function () {
 
     /** @var Role $role */
     $role = Role::find(4);
-    $parent = $role->parent();
+    $parent = $role->parent()->first();
     expect($parent)->toBeInstanceOf(Role::class)
         ->toHaveKey('id', 3);
 
     $role = Role::find(1);
-    $parent = $role->parent();
+    $parent = $role->parent()->first();
     expect($parent)->toBeNull();
 });
 
@@ -304,7 +305,7 @@ test('RBAC throws an exception when trying to get permissions of a non-existent 
 
 test('RBAC throws an exception when trying to get permissions of an invalid model', function () {
     // Δεν έχει το HasRoles trait
-    expect(fn () => RBAC::getPermissionsOf(\Orchestra\Testbench\Factories\UserFactory::new()))->toThrow(InvalidArgumentException::class);
+    expect(fn () => RBAC::getPermissionsOf(UserFactory::new()))->toThrow(InvalidArgumentException::class);
 
     // Δεν είναι model
     expect(fn () => RBAC::getPermissionsOf(Role::factory()->create()))->toThrow(InvalidArgumentException::class);

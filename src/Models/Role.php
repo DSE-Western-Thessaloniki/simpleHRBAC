@@ -9,6 +9,7 @@ use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
@@ -27,9 +28,9 @@ class Role extends Model
         return new RoleFactory;
     }
 
-    public function parent(): ?Role
+    public function parent(): BelongsTo
     {
-        return Role::find($this->parent_id);
+        return $this->belongsTo(Role::class, 'parent_id');
     }
 
     /**
