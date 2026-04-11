@@ -246,7 +246,7 @@ $immediate = $role->immediateChildren();
 $parents = $role->parents();
 
 // Get direct parent
-$parent = $role->parent();
+$parent = $role->parent()->first();
 
 // Move a role to a new parent
 $role->parent_id = 3;
