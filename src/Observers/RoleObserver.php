@@ -48,6 +48,16 @@ class RoleObserver
         if (Role::where('parent_id', null)->first()->id === $role->id) {
             throw new RBACException('You cannot move root node');
         }
+
+        // Check if the new parent is a descendant of the role (would create a cycle)
+        $isDescendant = DB::table('role_tree')
+            ->where('parent', $role->id)
+            ->where('child', $role->parent_id)
+            ->exists();
+
+        if ($isDescendant) {
+            throw new RBACException('Cannot move a role to one of its descendants (would create a circular reference)');
+        }
     }
 
     /**
