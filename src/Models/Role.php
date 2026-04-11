@@ -35,25 +35,25 @@ class Role extends Model
     /**
      * @return Collection<Role>
      */
-    public function children(): Collection
+    public function children($with = []): Collection
     {
-        return $this->tree()->children();
+        return $this->tree()->children($with);
     }
 
     /**
      * @return Collection<Role>
      */
-    public function immediateChildren(): Collection
+    public function immediateChildren($with = []): Collection
     {
-        return $this->tree()->immediateChildren();
+        return $this->tree()->immediateChildren($with);
     }
 
     /**
      * @return Collection<Role>
      */
-    public function parents(): Collection
+    public function parents($with = []): Collection
     {
-        return $this->tree()->parents();
+        return $this->tree()->parents($with);
     }
 
     public function tree(): ClosureTable

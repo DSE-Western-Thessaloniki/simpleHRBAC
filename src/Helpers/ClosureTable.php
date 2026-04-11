@@ -81,7 +81,7 @@ class ClosureTable
      *
      * @return Collection<Role>
      */
-    public function children(): Collection
+    public function children($with = []): Collection
     {
         $roleTable = $this->referenceRole->getTable();
 
@@ -91,7 +91,9 @@ class ClosureTable
             ->where("{$this->table}.child", '!=', $this->referenceRole->id)
             ->pluck("{$roleTable}.id");
 
-        $result = Role::find($ids);
+        $result = Role::query()
+            ->with($with)
+            ->find($ids);
 
         return $result instanceof Collection ? $result : new Collection($result);
     }
@@ -101,7 +103,7 @@ class ClosureTable
      *
      * @return Collection<Role>
      */
-    public function immediateChildren(): Collection
+    public function immediateChildren($with = []): Collection
     {
         $roleTable = $this->referenceRole->getTable();
 
@@ -112,7 +114,9 @@ class ClosureTable
             ->where("{$this->table}.depth", 1)
             ->pluck("{$roleTable}.id");
 
-        $result = Role::find($ids);
+        $result = Role::query()
+            ->with($with)
+            ->find($ids);
 
         return $result instanceof Collection ? $result : new Collection($result);
     }
@@ -122,7 +126,7 @@ class ClosureTable
      *
      * @return Collection<Role>
      */
-    public function parents(): Collection
+    public function parents($with = []): Collection
     {
         $roleTable = $this->referenceRole->getTable();
 
@@ -132,7 +136,9 @@ class ClosureTable
             ->where("{$roleTable}.id", '!=', $this->referenceRole->id)
             ->pluck("{$roleTable}.id");
 
-        $result = Role::find($ids);
+        $result = Role::query()
+            ->with($with)
+            ->find($ids);
 
         return $result instanceof Collection ? $result : new Collection($result);
     }
