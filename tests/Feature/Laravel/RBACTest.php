@@ -315,7 +315,8 @@ test('RBAC can return users that have specific permission', function () {
     DataHelper::importJsonFile(DATASET);
 
     $users = RBAC::getUsersWithPermission('Print');
-    expect($users)->toHaveCount(3);
+    expect($users)->toHaveCount(3)
+        ->toContainOnlyInstancesOf(User::class);
     expect($users->contains('id', 2))->toBeTrue();
     expect($users->contains('id', 3))->toBeTrue();
     expect($users->contains('id', 4))->toBeTrue();
