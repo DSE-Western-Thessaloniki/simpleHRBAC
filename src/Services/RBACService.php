@@ -3,6 +3,7 @@
 namespace Dsewth\SimpleHRBAC\Services;
 
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
+use Dsewth\SimpleHRBAC\Helpers\PermissionWildcard;
 use Dsewth\SimpleHRBAC\Models\Permission;
 use Dsewth\SimpleHRBAC\Models\Role;
 use Dsewth\SimpleHRBAC\Traits\HasRoles;
@@ -61,9 +62,11 @@ class RBACService
             ->merge($roleIds);
 
         // Βρες όλα τα δικαιώματα με μια ερώτηση
-        return Permission::whereHas('roles', function ($q) use ($allRoleIds) {
+        $permissions = Permission::whereHas('roles', function ($q) use ($allRoleIds) {
             $q->whereIn('role_id', $allRoleIds);
         })->get();
+
+        return PermissionWildcard::simplify($permissions);
     }
 
     /**
@@ -89,10 +92,6 @@ class RBACService
 
     protected function canWithoutCache(int $userId, string $permission): bool
     {
-        if (! Permission::where('name', $permission)->exists()) {
-            return false;
-        }
-
         $userModelClass = DataHelper::getUserModelClass();
         $user = $userModelClass::find($userId);
 
@@ -102,7 +101,9 @@ class RBACService
 
         $userPermissions = $this->getPermissionsOf($user);
 
-        return $userPermissions->contains('name', $permission);
+        return $userPermissions->contains(
+            fn (Permission $p) => PermissionWildcard::matches($p->name, $permission)
+        );
     }
 
     public function invalidateUserCache(int $userId): void
@@ -117,7 +118,50 @@ class RBACService
     {
         try {
             Cache::tags([self::permissionCacheTag($permission)])->flush();
+
+            // Cached can() entries are tagged by the literal queried name. When
+            // a wildcard permission like `view.*` changes, queried entries
+            // such as `view.1` (tagged only under `view.1`) would survive that
+            // flush. Invalidate the affected users to drop them too.
+            if (PermissionWildcard::isPattern($permission)) {
+                $this->invalidateUsersHoldingPermission($permission);
+            }
         } catch (\Exception $e) {
+        }
+    }
+
+    /**
+     * Invalidate the per-user can() cache for every user that holds the named
+     * permission either directly or through a role they inherit from.
+     */
+    public function invalidateUsersHoldingPermission(string $permissionName): void
+    {
+        $permission = Permission::where('name', $permissionName)->first();
+        if (! $permission) {
+            return;
+        }
+
+        $directRoleIds = DB::table('permission_role')
+            ->where('permission_id', $permission->id)
+            ->pluck('role_id');
+
+        if ($directRoleIds->isEmpty()) {
+            return;
+        }
+
+        $descendantRoleIds = DB::table('role_tree')
+            ->whereIn('parent', $directRoleIds)
+            ->pluck('child');
+
+        $allRoleIds = $directRoleIds->merge($descendantRoleIds)->unique();
+
+        $userIds = DB::table('role_user')
+            ->whereIn('role_id', $allRoleIds)
+            ->pluck('user_id')
+            ->unique();
+
+        foreach ($userIds as $userId) {
+            $this->invalidateUserCache($userId);
         }
     }
 
@@ -146,14 +190,20 @@ class RBACService
 
     public function getUsersWithPermission(string $permission): Collection
     {
-        $permissions = Permission::where('name', $permission)->first();
+        // A stored permission whose name is a wildcard pattern (e.g. `view.*`)
+        // grants every name it matches, so we have to consider every stored
+        // permission, not just the literal match.
+        $matchingPermissions = Permission::with('roles')
+            ->get()
+            ->filter(fn (Permission $p) => PermissionWildcard::matches($p->name, $permission));
 
-        if (! $permissions) {
+        if ($matchingPermissions->isEmpty()) {
             return collect();
         }
 
-        return $permissions
-            ->roles
+        return $matchingPermissions
+            ->flatMap(fn (Permission $p) => $p->roles)
+            ->unique('id')
             ->map(function (Role $role) {
                 return $role->parents()->push($role);
             })

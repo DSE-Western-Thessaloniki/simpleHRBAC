@@ -14,6 +14,7 @@ The package uses the **Closure Table** pattern to efficiently store and query ro
 
 - **Role hierarchy** with automatic permission inheritance
 - **Closure Table** pattern for efficient tree queries
+- **Wildcard permissions** — store `view.*` to grant any `view.…` name
 - **Automatic caching** with Laravel Cache tags and observer-driven invalidation
 - **JSON import** for bulk seeding and data migration
 - **Configurable user model** — no hard dependency on `\App\Models\User`
@@ -126,6 +127,27 @@ $permissions = RBAC::getPermissionsOf($user);
 // Get all users with a specific permission
 $users = RBAC::getUsersWithPermission('manage_team');
 ```
+
+### 4. Wildcard Permissions
+
+A stored permission name may contain `*` as a wildcard. `view.*` grants any
+name that matches it (`view.1`, `view.users.list`, …):
+
+```php
+$role->permissions()->attach(Permission::create(['name' => 'view.*']));
+
+RBAC::can($user->id, 'view.1');           // true
+RBAC::can($user->id, 'view.users.list');  // true
+RBAC::can($user->id, 'edit.1');           // false
+```
+
+`RBAC::getPermissionsOf($user)` returns a **simplified** collection: any
+permission that is already covered by another in the same collection is
+dropped, so `view.*` + `view.1` + `view.2` collapses to just `view.*`.
+
+`*` is greedy (matches across dots) and may appear anywhere in the name.
+See [doc/description.md](doc/description.md#wildcard-permissions) for the full
+semantics, simplification rules, and cache behavior.
 
 ## Documentation
 

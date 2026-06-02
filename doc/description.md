@@ -1,6 +1,6 @@
 # simpleHRBAC - Simple Hierarchical Role-Based Access Control
 
-> **Last Updated**: April 11, 2026
+> **Last Updated**: June 2, 2026
 
 ## Overview
 
@@ -30,9 +30,10 @@ The package uses the **Closure Table** pattern to efficiently store and query ro
 | **DataHelper** | Supports bulk import of permissions, roles, and users from JSON files or arrays |
 | **RBAC Facade** | Provides a clean static API to the RBACService |
 | **RoleObserver** | Enforces tree integrity constraints and invalidates cache during role lifecycle events |
-| **PermissionObserver** | Invalidates permission cache when names change or permissions are deleted |
+| **PermissionObserver** | Invalidates permission cache when names change or permissions are deleted; flushes the affected users' caches when wildcard permissions change |
 | **RoleUserObserver** | Invalidates user cache when roles are attached or detached |
 | **RoleFactory / PermissionFactory** | Eloquent factories for testing and seeding |
+| **PermissionWildcard Helper** | Matches and simplifies permission names that contain `*` |
 | **RBACException** | Custom exception class for RBAC errors |
 
 ### 3. Database Schema
@@ -279,6 +280,84 @@ DataHelper::importData([
     ],
 ]);
 ```
+
+---
+
+## Wildcard Permissions
+
+A stored permission name may contain `*` as a wildcard. When such a permission
+is held by a user (directly or through their role hierarchy), every name the
+pattern matches is granted.
+
+```php
+$role->permissions()->attach(Permission::create(['name' => 'view.*']));
+
+RBAC::can($user->id, 'view.1');          // true
+RBAC::can($user->id, 'view.users.list'); // true
+RBAC::can($user->id, 'edit.1');          // false
+```
+
+### Matching rules
+
+- `*` is **greedy**: it matches any sequence of characters, including dots.
+  `view.*` matches `view.1`, `view.users.list`, `view.a.b.c`.
+- `*` may appear **anywhere** in the name, and the name may contain more than
+  one `*`:
+  - `*.read` matches `posts.read`, `users.admin.read`
+  - `user_*` matches `user_1`, `user_admin`
+  - `view.*.edit` matches `view.posts.edit`, `view.a.b.edit`
+  - `*` alone matches any name (use with care)
+- Every other character is treated **literally**, including regex
+  meta-characters such as `.`, `+`, `(`, `)`.
+- The wildcard semantics applies **only to stored permission names**. Names
+  passed to `RBAC::can()` and `RBAC::getUsersWithPermission()` are treated as
+  literal strings — `RBAC::can($u, 'view.*')` only returns true if the user
+  holds a permission literally named `view.*`.
+
+### Simplification
+
+`RBAC::getPermissionsOf($user)` (and therefore `$user->permissions()` from the
+`HasRoles` trait) returns a **simplified** collection: any permission whose
+name is already covered by another permission in the same collection is
+omitted.
+
+If a user inherits `view.*`, `view.1` and `view.2`, the returned collection
+contains only `view.*`. Unrelated wildcards survive — `view.*` and `edit.*`
+both appear in the result.
+
+Two permissions with the same name are considered duplicates and only one is
+returned. The simplification is applied after permissions from all of the
+user's roles and their descendants have been gathered.
+
+You can also call the helper directly:
+
+```php
+use Dsewth\SimpleHRBAC\Helpers\PermissionWildcard;
+
+PermissionWildcard::matches('view.*', 'view.1');      // true
+PermissionWildcard::covers('view.*', 'view.1');       // true (strict)
+PermissionWildcard::covers('view.1', 'view.1');       // false (equal, not covering)
+PermissionWildcard::simplify($collectionOfPermissions);
+```
+
+### `getUsersWithPermission()` with wildcards
+
+`RBAC::getUsersWithPermission('view.1')` returns every user whose effective
+permissions match the queried name — including users whose role holds a
+wildcard like `view.*` that covers it. Users granted by multiple matching
+permissions are returned only once.
+
+### Cache invalidation
+
+Cached `can()` answers are keyed by the literal queried name (`view.1`), not
+by the wildcard that may have granted them (`view.*`). When a wildcard
+permission is renamed or deleted, the `PermissionObserver` therefore flushes
+the **per-user** caches of every user that held it (directly or through their
+role hierarchy), in addition to flushing the permission-name tag.
+
+`RBAC::invalidatePermissionCache('view.*')` does the same thing for manual
+invalidation: if the named permission is a wildcard pattern and still exists
+in the database, the affected users' caches are flushed.
 
 ---
 
