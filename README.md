@@ -35,7 +35,7 @@ Add the repository to your `composer.json`:
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/dsewth/simpleHRBAC.git"
+            "url": "https://github.com/DSE-Western-Thessaloniki/simpleHRBAC.git"
         }
     ]
 }
