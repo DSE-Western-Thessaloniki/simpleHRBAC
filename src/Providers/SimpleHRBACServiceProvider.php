@@ -16,7 +16,10 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             $this->offerPublishing();
         }
 
-        $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+        if ($this->app->runningUnitTests() || $this->app->environment('testing')) {
+            $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+        }
+
         $this->setUserModel();
     }
 
@@ -47,11 +50,11 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             __DIR__.'/../../config/simple-hrbac.php' => config_path('simple-hrbac.php'),
         ], 'config');
         $this->publishes([
-            __DIR__.'/../../database/migrations/01_permissions.php' => $this->getMigrationFilename('create_permissions_table.php'),
-            __DIR__.'/../../database/migrations/02_roles.php' => $this->getMigrationFilename('create_roles_table.php'),
-            __DIR__.'/../../database/migrations/03_role_tree.php' => $this->getMigrationFilename('create_role_tree_table.php'),
-            __DIR__.'/../../database/migrations/04_permission_role.php' => $this->getMigrationFilename('create_permission_role_table.php'),
-            __DIR__.'/../../database/migrations/05_role_user.php' => $this->getMigrationFilename('create_role_user_table.php'),
+            __DIR__.'/../../database/migrations/01_permissions.php' => $this->getMigrationFilename('01_create_permissions_table.php'),
+            __DIR__.'/../../database/migrations/02_roles.php' => $this->getMigrationFilename('02_create_roles_table.php'),
+            __DIR__.'/../../database/migrations/03_role_tree.php' => $this->getMigrationFilename('03_create_role_tree_table.php'),
+            __DIR__.'/../../database/migrations/04_permission_role.php' => $this->getMigrationFilename('04_create_permission_role_table.php'),
+            __DIR__.'/../../database/migrations/05_role_user.php' => $this->getMigrationFilename('05_create_role_user_table.php'),
         ], 'migrations');
     }
 
