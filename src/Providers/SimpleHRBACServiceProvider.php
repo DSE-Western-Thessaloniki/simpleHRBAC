@@ -16,10 +16,6 @@ class SimpleHRBACServiceProvider extends ServiceProvider
             $this->offerPublishing();
         }
 
-        if ($this->app->runningUnitTests() || $this->app->environment('testing')) {
-            $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
-        }
-
         $this->setUserModel();
     }
 

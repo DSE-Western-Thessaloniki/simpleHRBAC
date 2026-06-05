@@ -14,4 +14,9 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
      * @var bool
      */
     protected $enablesPackageDiscoveries = true;
+
+    protected function defineDatabaseMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+    }
 }
