@@ -5,6 +5,7 @@ namespace Dsewth\SimpleHRBAC\Models;
 use Dsewth\SimpleHRBAC\Factories\RoleFactory;
 use Dsewth\SimpleHRBAC\Helpers\ClosureTable;
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
+use Dsewth\SimpleHRBAC\Helpers\PermissionWildcard;
 use Dsewth\SimpleHRBAC\Observers\RoleObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,6 +66,28 @@ class Role extends Model
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class);
+    }
+
+    public function inheritedPermissions(): Collection
+    {
+        $permissions = collect();
+
+        foreach ($this->children() as $child) {
+            $permissions = $permissions->merge($child->permissions);
+        }
+
+        $permissions = $permissions->merge($this->permissions)->unique('id');
+
+        return PermissionWildcard::simplify($permissions);
+    }
+
+    public function effectivePermissions(): Collection
+    {
+        $permissions = $this->inheritedPermissions();
+
+        $permissions = $permissions->merge($this->permissions)->unique('id');
+
+        return PermissionWildcard::simplify($permissions);
     }
 
     public function users(): BelongsToMany
