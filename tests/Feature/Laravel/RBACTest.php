@@ -79,6 +79,120 @@ test('RBAC can get parents of a role', function () {
     expect($parents->where('id', 4))->toHaveCount(0);
 });
 
+test('RBAC can calculate inherited permissions for a role', function () {
+    /** @var Role $root */
+    $root = Role::factory()->create(['name' => 'Root', 'description' => 'Root']);
+
+    /** @var Role $child */
+    $child = Role::factory()->create([
+        'name' => 'Child',
+        'description' => 'Child',
+        'parent_id' => $root->id,
+    ]);
+
+    /** @var Role $grandchild */
+    $grandchild = Role::factory()->create([
+        'name' => 'Grandchild',
+        'description' => 'Grandchild',
+        'parent_id' => $child->id,
+    ]);
+
+    $rootPermission = Permission::factory()->create(['name' => 'edit.posts']);
+    $grandchildPermission = Permission::factory()->create(['name' => 'view.users']);
+
+    $root->permissions()->attach($rootPermission);
+    $grandchild->permissions()->attach($grandchildPermission);
+
+    $permissions = $root->inheritedPermissions();
+
+    expect($permissions)
+        ->toBeInstanceOf(Collection::class)
+        ->toHaveCount(2);
+    expect($permissions->pluck('name'))->toContain('edit.posts');
+    expect($permissions->pluck('name'))->toContain('view.users');
+});
+
+test('RBAC simplifies wildcard permissions when inheriting role permissions', function () {
+    /** @var Role $root */
+    $root = Role::factory()->create(['name' => 'Root', 'description' => 'Root']);
+
+    /** @var Role $child */
+    $child = Role::factory()->create([
+        'name' => 'Child',
+        'description' => 'Child',
+        'parent_id' => $root->id,
+    ]);
+
+    /** @var Role $grandchild */
+    $grandchild = Role::factory()->create([
+        'name' => 'Grandchild',
+        'description' => 'Grandchild',
+        'parent_id' => $child->id,
+    ]);
+
+    $wildcardPermission = Permission::factory()->create(['name' => 'view.*']);
+    $specificPermission = Permission::factory()->create(['name' => 'view.posts']);
+
+    $child->permissions()->attach($wildcardPermission);
+    $grandchild->permissions()->attach($specificPermission);
+
+    $permissions = $root->inheritedPermissions();
+
+    expect($permissions)
+        ->toBeInstanceOf(Collection::class)
+        ->toHaveCount(1);
+    expect($permissions->first()->name)->toBe('view.*');
+});
+
+test('RBAC can calculate effective permissions for a role without duplicates', function () {
+    /** @var Role $root */
+    $root = Role::factory()->create(['name' => 'Root', 'description' => 'Root']);
+
+    /** @var Role $child */
+    $child = Role::factory()->create([
+        'name' => 'Child',
+        'description' => 'Child',
+        'parent_id' => $root->id,
+    ]);
+
+    $permission = Permission::factory()->create(['name' => 'manage.settings']);
+
+    $root->permissions()->attach($permission);
+    $child->permissions()->attach($permission);
+
+    $permissions = $root->effectivePermissions();
+
+    expect($permissions)
+        ->toBeInstanceOf(Collection::class)
+        ->toHaveCount(1);
+    expect($permissions->first()->name)->toBe('manage.settings');
+});
+
+test('RBAC simplifies wildcard permissions when aggregating role permissions', function () {
+    /** @var Role $root */
+    $root = Role::factory()->create(['name' => 'Root', 'description' => 'Root']);
+
+    /** @var Role $child */
+    $child = Role::factory()->create([
+        'name' => 'Child',
+        'description' => 'Child',
+        'parent_id' => $root->id,
+    ]);
+
+    $wildcardPermission = Permission::factory()->create(['name' => 'view.*']);
+    $specificPermission = Permission::factory()->create(['name' => 'view.posts']);
+
+    $root->permissions()->attach($wildcardPermission);
+    $child->permissions()->attach($specificPermission);
+
+    $permissions = $root->effectivePermissions();
+
+    expect($permissions)
+        ->toBeInstanceOf(Collection::class)
+        ->toHaveCount(1);
+    expect($permissions->first()->name)->toBe('view.*');
+});
+
 test('RBAC can delete a leaf of the role tree', function () {
     DataHelper::importJsonFile(DATASET);
 
