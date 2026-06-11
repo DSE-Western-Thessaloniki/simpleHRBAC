@@ -15,7 +15,7 @@ class Permission extends Model
     use HasFactory;
 
     /** @var array */
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'description'];
 
     public $timestamps = false;
 
