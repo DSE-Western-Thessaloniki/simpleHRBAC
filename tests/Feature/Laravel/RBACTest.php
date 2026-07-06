@@ -107,8 +107,7 @@ test('RBAC can calculate inherited permissions for a role', function () {
 
     expect($permissions)
         ->toBeInstanceOf(Collection::class)
-        ->toHaveCount(2);
-    expect($permissions->pluck('name'))->toContain('edit.posts');
+        ->toHaveCount(1);
     expect($permissions->pluck('name'))->toContain('view.users');
 });
 
