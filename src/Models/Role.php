@@ -76,16 +76,14 @@ class Role extends Model
             $permissions = $permissions->merge($child->permissions);
         }
 
-        $permissions = $permissions->merge($this->permissions)->unique('id');
-
-        return PermissionWildcard::simplify($permissions);
+        return PermissionWildcard::simplify($permissions->unique('id'));
     }
 
     public function effectivePermissions(): Collection
     {
-        $permissions = $this->inheritedPermissions();
-
-        $permissions = $permissions->merge($this->permissions)->unique('id');
+        $permissions = $this->inheritedPermissions()
+            ->merge($this->permissions)
+            ->unique('id');
 
         return PermissionWildcard::simplify($permissions);
     }
