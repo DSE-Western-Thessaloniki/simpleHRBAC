@@ -150,6 +150,74 @@ test('simplify ignores ordering of input', function () {
     }
 });
 
+test('expand returns all matching permissions for simplified wildcards', function () {
+    $simplified = collect([
+        new Permission(['name' => 'view.*']),
+        new Permission(['name' => 'edit.1']),
+    ]);
+
+    $allPermissions = collect([
+        new Permission(['name' => 'view.*']),
+        new Permission(['name' => 'view.1']),
+        new Permission(['name' => 'view.2']),
+        new Permission(['name' => 'edit.1']),
+        new Permission(['name' => 'edit.2']),
+    ]);
+
+    $expanded = PermissionWildcard::expand($simplified, $allPermissions);
+
+    expect($expanded->pluck('name')->sort()->values()->all())
+        ->toEqual(['edit.1', 'view.1', 'view.2']);
+});
+
+test('expand removes wildcard permissions from its results', function () {
+    $simplified = collect([
+        new Permission(['name' => 'view.*']),
+    ]);
+
+    $allPermissions = collect([
+        new Permission(['name' => 'view.*']),
+        new Permission(['name' => 'view.1']),
+        new Permission(['name' => 'view.2']),
+    ]);
+
+    $expanded = PermissionWildcard::expand($simplified, $allPermissions);
+
+    expect($expanded->pluck('name')->sort()->values()->all())
+        ->toEqual(['view.1', 'view.2']);
+});
+
+test('expand only returns exact matches when simplified contains literal permissions', function () {
+    $simplified = collect([
+        new Permission(['name' => 'view.1']),
+    ]);
+
+    $allPermissions = collect([
+        new Permission(['name' => 'view.1']),
+        new Permission(['name' => 'view.2']),
+    ]);
+
+    $expanded = PermissionWildcard::expand($simplified, $allPermissions);
+
+    expect($expanded->pluck('name')->all())->toEqual(['view.1']);
+});
+
+test('expand defaults allPermissions to Permission::all()', function () {
+    $simplified = collect([
+        new Permission(['name' => 'view.*']),
+    ]);
+
+    Permission::create(['name' => 'view.*']);
+    Permission::create(['name' => 'view.1']);
+    Permission::create(['name' => 'view.2']);
+    Permission::create(['name' => 'edit.1']);
+
+    $expanded = PermissionWildcard::expand($simplified);
+
+    expect($expanded->pluck('name')->sort()->values()->all())
+        ->toEqual(['view.1', 'view.2']);
+});
+
 /*
  * ============================================================
  * getPermissionsOf simplifies inherited permissions

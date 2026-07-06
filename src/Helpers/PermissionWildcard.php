@@ -94,4 +94,35 @@ class PermissionWildcard
             })
             ->values();
     }
+
+    /**
+     * Return every permission from $allPermissions that is covered by any
+     * permission in $simplifiedPermissions.
+     *
+     * This is effectively the inverse of simplify for a given known universe
+     * of permissions.
+     *
+     * @param  Collection<int, Permission>  $simplifiedPermissions
+     * @param  Collection<int, Permission>|null  $allPermissions
+     * @return Collection<int, Permission>
+     */
+    public static function expand(Collection $simplifiedPermissions, ?Collection $allPermissions = null): Collection
+    {
+        $names = $simplifiedPermissions->pluck('name')->all();
+        $allPermissions = $allPermissions ?? Permission::all();
+
+        return $allPermissions
+            ->filter(function ($permission) use ($names) {
+                foreach ($names as $name) {
+                    if (self::matches($name, $permission->name)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            })
+            ->reject(fn ($permission) => self::isPattern($permission->name))
+            ->unique(fn ($permission) => $permission->id ?? $permission->name)
+            ->values();
+    }
 }
