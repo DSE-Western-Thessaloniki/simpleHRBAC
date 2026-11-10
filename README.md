@@ -17,6 +17,7 @@ The package uses the **Closure Table** pattern to efficiently store and query ro
 - **Wildcard permissions** — store `view.*` to grant any `view.…` name
 - **Automatic caching** with Laravel Cache tags and observer-driven invalidation
 - **JSON import** for bulk seeding and data migration
+- **Interactive shell** — browse and manage the role tree with `php artisan rbac:shell`
 - **Configurable user model** — no hard dependency on `\App\Models\User`
 
 ## Installation
@@ -148,6 +149,83 @@ dropped, so `view.*` + `view.1` + `view.2` collapses to just `view.*`.
 `*` is greedy (matches across dots) and may appear anywhere in the name.
 See [doc/description.md](doc/description.md#wildcard-permissions) for the full
 semantics, simplification rules, and cache behavior.
+
+## Interactive Shell
+
+The package ships an interactive console for browsing and managing the role
+tree straight from the terminal:
+
+```bash
+php artisan rbac:shell
+```
+
+The shell starts at the **root role** (the role with no parent) and shows the
+current path in the prompt, e.g. `simpleHRBAC [Root/Managers] >`. Use `cd` to
+move around the tree just like a file system; `ls` shows the children of the
+current role together with their users and permissions.
+
+A session might look like this:
+
+```text
+simpleHRBAC [/] > add role
+ ? Role name ................................................................ Managers
+ ? Description (optional) ........................................... Manages the sales team
+Role #2 "Managers" created.
+
+simpleHRBAC [Root] > cd Ma<TAB>
+simpleHRBAC [Root/Managers] > add permission --new
+ ? Permission name ........................................................ posts.edit
+ ? Description (optional) ............................................. Edit blog posts
+Permission #3 "posts.edit" created and attached to role #2 "Managers".
+
+simpleHRBAC [Root/Managers] > rm role Nowhere
+ Role "Nowhere" was not found.
+
+simpleHRBAC [Root/Managers] > help
+simpleHRBAC [Root/Managers] > exit
+Goodbye!
+```
+
+### Shell Commands
+
+| Command | Usage | Description |
+|---|---|---|
+| `ls` | `ls` | List the child roles of the current role with their users (`id: name`) and permissions (`id: name — description`) |
+| `cd` | `cd <role>` | Change the current role by **id or name**; `..` goes one level up, `/` jumps to the root |
+| `add role` | `add role` | Create a role under the current one — unique name (required) and optional description |
+| `add permission` | `add permission [--new]` | Attach existing permissions to the current role (multi-select), or create a new unique one and attach it with `--new` |
+| `add user` | `add user` | Grant the current role to the selected users (multi-select) |
+| `mv` | `mv <role> <path>` | Move a role under a new parent, given by id, name, or a slash path from the root (`Root/Managers`) |
+| `rm role` | `rm role <role>` | Delete a role — only allowed when it has **no children and no users** (the root can never be deleted) |
+| `rm user` | `rm user <user>` | Remove the current role from the given user |
+| `rm permission` | `rm permission <permission>` | Detach the given permission from the current role |
+| `help` | `help` | Show the command list |
+| `exit` | `exit` / `quit` | Leave the shell (`Ctrl+D` on an empty line works too) |
+
+Arguments written as `<role>`, `<user>` or `<permission>` accept either the
+**id** or the **name** of the record; duplicate user names are disambiguated
+with a selection prompt. Wrap names containing spaces in quotes
+(`cd "Senior Managers"`) — the `add` prompts accept spaces directly.
+
+### Tab Completion
+
+When PHP's `ext-readline` extension is available (suggested, see
+`composer.json`), the shell provides context-aware **TAB completion**:
+
+- commands (`ls`, `cd`, `add`, `rm`, `mv`, `help`, `exit`, `quit`)
+- role ids and names after `cd`, `mv` and `rm role`
+- full role paths from the root as the second argument of `mv` (`Root/Man…`)
+- `role` / `user` / `permission` after `rm`, plus matching ids and names after that
+- `role` / `permission [--new]` / `user` after `add`
+
+Without `ext-readline` (e.g. on Windows) the shell falls back to plain line
+input and simply reads one command per line — everything else keeps working.
+
+### User Model
+
+All user listings and selections use the model configured as
+`simple-hrbac.user_model` (see [Publish Config and Migrations](#publish-config-and-migrations)),
+so the shell works with whatever user model your application uses.
 
 ## Documentation
 

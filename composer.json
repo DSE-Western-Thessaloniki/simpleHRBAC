@@ -5,9 +5,14 @@
     "license": "GPL-3.0-or-later",
     "require": {
         "php": "^8.2",
+        "illuminate/console": "^11.0 | ^12.0 | ^13.0",
         "illuminate/database": "^11.0 | ^12.0 | ^13.0",
         "illuminate/events": "^11.0 | ^12.0 | ^13.0",
+        "laravel/prompts": "^0.1.18 | ^0.2.0 | ^0.3.0",
         "symfony/var-dumper": "^7.0 | ^8.0"
+    },
+    "suggest": {
+        "ext-readline": "Enables line editing, history and tab completion in the rbac:shell command"
     },
     "autoload": {
         "psr-4": {

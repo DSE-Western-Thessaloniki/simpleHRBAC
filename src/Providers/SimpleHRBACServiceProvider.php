@@ -2,6 +2,7 @@
 
 namespace Dsewth\SimpleHRBAC\Providers;
 
+use Dsewth\SimpleHRBAC\Console\RbacShellCommand;
 use Dsewth\SimpleHRBAC\Helpers\DataHelper;
 use Dsewth\SimpleHRBAC\Services\RBACService;
 use Illuminate\Filesystem\Filesystem;
@@ -14,6 +15,7 @@ class SimpleHRBACServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->offerPublishing();
+            $this->commands([RbacShellCommand::class]);
         }
 
         $this->setUserModel();
