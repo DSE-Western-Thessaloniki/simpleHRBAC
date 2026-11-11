@@ -11,4 +11,5 @@ return [
     |
     */
     'user_model' => '\App\Models\User',
+    'user_name_column' => 'name',
 ];

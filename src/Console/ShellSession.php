@@ -194,6 +194,8 @@ class ShellSession
         ));
         $this->line();
 
+        $this->info('Child roles:');
+        $this->line();
         if ($children->isEmpty()) {
             $this->warn('No child roles here. Use "add role" to create one under the current role.');
 
@@ -207,14 +209,37 @@ class ShellSession
                 '#'.$child->id,
                 $this->e($child->name),
                 $child->description !== null && $child->description !== '' ? $this->e($child->description) : '—',
-                $this->formatUsers($child),
-                $this->formatPermissions($child),
             ];
         }
 
         $this->renderTable(
-            ['ID', 'Name', 'Description', 'Users (id: name)', 'Permissions (id: name — description)'],
+            ['ID', 'Name', 'Description'],// 'Users (id: name)', 'Permissions (id: name — description)'],
             $rows
+        );
+
+        $this->line();
+        $this->info('Users with this role:');
+        $users = $role->users;
+        $this->line();
+        $this->renderTable(
+            ['ID', 'Name <email>'],
+            $users->map(fn (Model $user): array => [
+                '#'.$user->id,
+                $this->e($this->userLabel($user, true)),
+            ])->toArray()
+        );
+
+        $this->line();
+        $this->info('Permissions attached to this role:');
+        $permissions = $role->permissions;
+        $this->line();
+        $this->renderTable(
+            ['ID', 'Name', 'Description'],
+            $permissions->map(fn (Permission $permission): array => [
+                '#'.$permission->id,
+                $this->e($permission->name),
+                $permission->description !== null && $permission->description !== '' ? $this->e($permission->description) : '—',
+            ])->toArray()
         );
     }
 
@@ -964,46 +989,9 @@ class ShellSession
             ->render();
     }
 
-    /**
-     * @param  list<Model>  $users
-     */
-    protected function formatUsers(Role $role): string
-    {
-        $users = $role->users;
-
-        if ($users->isEmpty()) {
-            return '—';
-        }
-
-        return $users
-            ->map(fn (Model $user): string => $user->id.': '.$this->e($this->userLabel($user)))
-            ->implode(', ');
-    }
-
-    protected function formatPermissions(Role $role): string
-    {
-        $permissions = $role->permissions;
-
-        if ($permissions->isEmpty()) {
-            return '—';
-        }
-
-        return $permissions
-            ->map(function (Permission $permission): string {
-                $label = $permission->id.': '.$this->e($permission->name);
-
-                if ($permission->description !== null && $permission->description !== '') {
-                    $label .= ' — '.$this->e($permission->description);
-                }
-
-                return $label;
-            })
-            ->implode(', ');
-    }
-
     protected function userLabel(Model $user, bool $withEmail = false): string
     {
-        $name = $user->getAttribute('name');
+        $name = $user->getAttribute(config('simple-hrbac.user_name_column', 'name'));
 
         if (! is_string($name) || $name === '') {
             $name = $user->getAttribute('email');
