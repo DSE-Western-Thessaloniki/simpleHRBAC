@@ -120,15 +120,15 @@ it('rejects a duplicate role name', function () {
     expect(Role::query()->where('name', 'Managers')->exists())->toBeTrue();
 });
 
-it('lists child roles with their users and permissions', function () {
+it('lists child roles and the current role users and permissions', function () {
     $root = shell_role('Root');
-    $managers = shell_role('Managers', $root, 'Management team');
+    shell_role('Managers', $root, 'Management team');
 
     $permission = Permission::create(['name' => 'users.view', 'description' => 'View users']);
-    $managers->permissions()->attach($permission->id);
+    $root->permissions()->attach($permission->id);
 
     $user = User::factory()->create(['name' => 'Alice']);
-    $managers->users()->attach($user->id);
+    $root->users()->attach($user->id);
 
     $this->session->execute('ls');
 
@@ -139,7 +139,8 @@ it('lists child roles with their users and permissions', function () {
         ->toContain('Management team')
         ->toContain('users.view')
         ->toContain('View users')
-        ->toContain($user->id.': Alice');
+        ->toContain('#'.$user->id)
+        ->toContain('Alice');
 });
 
 it('navigates the tree with cd', function () {
@@ -405,6 +406,10 @@ it('provides context aware tab completion', function () {
     expect($completer->complete(''))
         ->toContain('ls', 'cd', 'add', 'rm', 'mv', 'help', 'exit', 'quit');
     expect($completer->complete('cd Ma'))->toBe(['Managers']);
+    shell_role('Role A', $root);
+    shell_role('Role B', $root);
+    expect($completer->complete('cd Role'))->toBe(['Role A', 'Role B']);
+    expect($completer->complete('cd Role '))->toBe(['A', 'B']);
     expect($completer->complete('cd '))->toContain('Root', 'Managers', 'Sales', '..', '/');
     expect($completer->complete('rm '))->toBe(['role', 'user', 'permission']);
     expect($completer->complete('rm role '))->toContain('Managers');
