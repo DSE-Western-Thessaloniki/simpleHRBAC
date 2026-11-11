@@ -244,7 +244,6 @@ class ShellSession
 
             $this->current = $root;
             $this->loaded = true;
-            $this->cmdLs();
 
             return;
         }
@@ -266,7 +265,6 @@ class ShellSession
 
             $this->current = Role::find($role->parent_id);
             $this->loaded = true;
-            $this->cmdLs();
 
             return;
         }
@@ -279,7 +277,6 @@ class ShellSession
 
         $this->current = $role;
         $this->loaded = true;
-        $this->cmdLs();
     }
 
     /**
