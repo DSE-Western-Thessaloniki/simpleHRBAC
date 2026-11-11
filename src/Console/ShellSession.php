@@ -244,24 +244,22 @@ class ShellSession
         $this->line();
         if ($children->isEmpty()) {
             $this->warn('No child roles here. Use "add role" to create one under the current role.');
+        } else {
+            $rows = [];
 
-            return;
+            foreach ($children as $child) {
+                $rows[] = [
+                    '#'.$child->id,
+                    $this->e($child->name),
+                    $child->description !== null && $child->description !== '' ? $this->e($child->description) : '—',
+                ];
+            }
+
+            $this->renderTable(
+                ['ID', 'Name', 'Description'],// 'Users (id: name)', 'Permissions (id: name — description)'],
+                $rows
+            );
         }
-
-        $rows = [];
-
-        foreach ($children as $child) {
-            $rows[] = [
-                '#'.$child->id,
-                $this->e($child->name),
-                $child->description !== null && $child->description !== '' ? $this->e($child->description) : '—',
-            ];
-        }
-
-        $this->renderTable(
-            ['ID', 'Name', 'Description'],// 'Users (id: name)', 'Permissions (id: name — description)'],
-            $rows
-        );
 
         $this->line();
         $this->info('Users with this role:');
