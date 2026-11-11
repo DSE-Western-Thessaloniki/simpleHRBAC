@@ -81,7 +81,7 @@ class ShellCompleter
 
         if (preg_match('/\s$/', $typing)) {
             $candidates = array_map(
-                fn (string $candidate): string => substr($candidate, strlen($typing)),
+                fn (string $candidate): string => mb_substr($candidate, mb_strlen($typing)),
                 $candidates
             );
         }
