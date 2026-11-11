@@ -20,6 +20,12 @@ class ShellCompleter
      */
     public function complete(string $buffer): array
     {
+        $leftTrimmed = ltrim($buffer);
+
+        if (preg_match('/^cd\s+(.*)$/is', $leftTrimmed, $matches)) {
+            return $this->completeRoleTarget($matches[1]);
+        }
+
         $trimmed = trim($buffer);
         $typing = '';
         $words = [];
@@ -59,6 +65,28 @@ class ShellCompleter
         }
 
         return array_values(array_unique($matches));
+    }
+
+    /**
+     * Complete a role name that may contain spaces.
+     *
+     * @return list<string>
+     */
+    protected function completeRoleTarget(string $typing): array
+    {
+        $candidates = array_filter(
+            $this->roleTargets(),
+            fn (string $candidate): bool => str_starts_with($candidate, $typing)
+        );
+
+        if (preg_match('/\s$/', $typing)) {
+            $candidates = array_map(
+                fn (string $candidate): string => substr($candidate, strlen($typing)),
+                $candidates
+            );
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     /**
