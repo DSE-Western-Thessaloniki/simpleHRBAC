@@ -421,3 +421,80 @@ it('provides context aware tab completion', function () {
     expect($completer->complete('help '))->toContain('ls');
     expect($completer->complete('ls --'))->toBe([]);
 });
+
+it('cuts the candidates at the offset readline replaces', function () {
+    $root = shell_role('Root');
+    shell_role('Υπάλληλος (ΑΦ)', $root);
+    shell_role('Υπάλληλος (ΑΡΧΕΙΟ)', $root);
+
+    $completer = $this->session->completer();
+
+    // With the cursor on the argument itself the whole name is offered.
+    expect($completer->complete('cd Υ', 3))->toBe([
+        'Υπάλληλος (ΑΦ)',
+        'Υπάλληλος (ΑΡΧΕΙΟ)',
+    ]);
+
+    // "(" is a readline word break character: from there on readline only
+    // replaces the fragment after it, so the candidates have to be cut at
+    // the same offset instead of returning the whole name again.
+    expect($completer->complete('cd Υπάλληλος (', 23))->toBe(['ΑΦ)', 'ΑΡΧΕΙΟ)']);
+    expect($completer->complete('cd Υπάλληλος (Α', 23))->toBe(['ΑΦ)', 'ΑΡΧΕΙΟ)']);
+
+    // The offset is derived from the buffer when readline does not supply it.
+    expect($completer->complete('cd Υπάλληλος (Α'))->toBe(['ΑΦ)', 'ΑΡΧΕΙΟ)']);
+});
+
+it('runs cd, rm and mv with unquoted multi word role names', function () {
+    $root = shell_role('Root');
+    $managers = shell_role('Managers', $root);
+    $target = shell_role('Role A', $root);
+    $team = shell_role('Team X', $root);
+    shell_role('Leaf Role', $target);
+
+    $this->session->execute('cd Role A');
+    expect($this->session->path())->toBe('Root/Role A');
+
+    $this->session->execute('cd /');
+    expect($this->session->path())->toBe('Root');
+
+    // A quoted target still works: the quotes are stripped by the tokenizer.
+    $this->session->execute('cd "Role A"');
+    expect($this->session->path())->toBe('Root/Role A');
+
+    $this->session->execute('cd /');
+    expect($this->session->path())->toBe('Root');
+
+    // The source of `mv` may contain spaces...
+    $this->session->execute('mv Leaf Role Managers');
+    expect(Role::query()->where('name', 'Leaf Role')->first()->parent_id)->toBe($managers->id);
+
+    // ...and so may the target path.
+    $this->session->execute('mv Leaf Role Root/Team X');
+    expect(Role::query()->where('name', 'Leaf Role')->first()->parent_id)->toBe($team->id);
+
+    $this->session->execute('rm role Role A');
+    expect(Role::query()->where('name', 'Role A')->exists())->toBeFalse();
+});
+
+it('locates multi word references while completing', function () {
+    $root = shell_role('Root');
+    shell_role('Managers', $root);
+    shell_role('Role A', $root);
+    shell_role('Role B', $root);
+
+    $completer = $this->session->completer();
+
+    // `mv <role> <path>`: the target starts after the shortest run of
+    // words that resolves to a role.
+    expect($completer->complete('mv Role A '))->toContain('Root/Managers', 'Root/Role A');
+    expect($completer->complete('mv Role A R'))->toContain('Root/Role A');
+
+    // While the source itself is being typed, only roles are offered and
+    // cut at the offset readline replaces them.
+    expect($completer->complete('mv Role A', 8))->toBe(['A']);
+
+    // `rm <type> <reference>`: the reference starts after the type word.
+    expect($completer->complete('rm role Role A', 13))->toBe(['A']);
+    expect($completer->complete('rm role Role '))->toBe(['A', 'B']);
+});

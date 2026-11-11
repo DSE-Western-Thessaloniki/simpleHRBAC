@@ -139,19 +139,51 @@ class RbacShellCommand extends Command
         readline_completion_function(function (string $text, int $start, int $end) use ($completer): array {
             try {
                 $buffer = $text;
+                $textStart = null;
                 $info = function_exists('readline_info') ? readline_info() : null;
 
                 if (is_array($info) && isset($info['line_buffer'])) {
                     // line_buffer may contain trailing data, cut it at the cursor.
                     $point = (int) ($info['point'] ?? $info['end'] ?? strlen($info['line_buffer']));
                     $buffer = substr((string) $info['line_buffer'], 0, $point);
+                    // readline offsets are byte positions in line_buffer,
+                    // the same space the cut buffer above is taken from.
+                    $textStart = $start;
                 }
 
-                return $completer->complete($buffer);
+                $matches = $completer->complete($buffer, $textStart);
+
+                $this->tuneReadline($matches, $text);
+
+                return $matches;
             } catch (\Throwable) {
                 // Never break the line editor because of a failed lookup.
                 return [];
             }
         });
+    }
+
+    /**
+     * Prepare readline for the candidates that were just returned.
+     *
+     * Readline appends `completion_append_character` after it inserted a
+     * single match, so it is dropped when nothing can be completed —
+     * otherwise a TAB that matched nothing still types a space. The
+     * completion is also marked as finished, which stops readline from
+     * falling back to filename completion and inserting a file of the
+     * working directory into the shell line.
+     *
+     * @param  list<string>  $matches
+     */
+    protected function tuneReadline(array $matches, string $text): void
+    {
+        if (! function_exists('readline_info')) {
+            return;
+        }
+
+        $usable = array_filter($matches, fn (string $candidate): bool => str_starts_with($candidate, $text));
+
+        readline_info('completion_append_character', $usable === [] ? '' : ' ');
+        readline_info('attempted_completion_over', 1);
     }
 }

@@ -155,17 +155,63 @@ class ShellSession
      */
     protected function tokenize(string $line): array
     {
-        preg_match_all('/"[^"]*"|\'[^\']*\'|\S+/', trim($line), $matches);
+        return array_column($this->tokenizeWithOffsets($line), 'value');
+    }
 
-        return array_map(function (string $token): string {
+    /**
+     * Split a line into tokens and keep their byte offsets.
+     *
+     * `start` is the offset of the token in the line, `contentStart` the
+     * offset where its value begins — one byte later for a token that
+     * starts with a quote, because readline treats the quote as a word
+     * break character and completes only what follows it.
+     *
+     * @return list<array{value: string, start: int, contentStart: int}>
+     */
+    public function tokenizeWithOffsets(string $line): array
+    {
+        preg_match_all('/"[^"]*"|\'[^\']*\'|\S+/', $line, $matches, PREG_OFFSET_CAPTURE);
+
+        $tokens = [];
+
+        foreach ($matches[0] as [$token, $start]) {
             $length = strlen($token);
+            $quoted = $length >= 2 && ($token[0] === '"' || $token[0] === "'") && $token[$length - 1] === $token[0];
 
-            if ($length >= 2 && ($token[0] === '"' || $token[0] === "'") && $token[$length - 1] === $token[0]) {
-                return substr($token, 1, -1);
+            $tokens[] = [
+                'value' => $quoted ? substr($token, 1, -1) : $token,
+                'start' => $start,
+                'contentStart' => $start + (($token[0] === '"' || $token[0] === "'") ? 1 : 0),
+            ];
+        }
+
+        return $tokens;
+    }
+
+    /**
+     * Length of the shortest run of tokens that resolves to an existing role.
+     *
+     * Role names may contain spaces, so a reference written as several
+     * tokens belongs together until it resolves; returns 0 when no run
+     * of the tokens resolves to a role.
+     *
+     * @param  list<string>  $tokens
+     */
+    public function roleReferenceLength(array $tokens): int
+    {
+        if ($tokens === []) {
+            return 0;
+        }
+
+        foreach (range(1, count($tokens)) as $length) {
+            $reference = implode(' ', array_slice($tokens, 0, $length));
+
+            if ($reference !== '' && $this->resolveRole($reference) !== null) {
+                return $length;
             }
+        }
 
-            return $token;
-        }, $matches[0]);
+        return 0;
     }
 
     /**
@@ -246,6 +292,10 @@ class ShellSession
     /**
      * Change the current role: `cd <role>`, `cd ..` or `cd /`.
      *
+     * Role names may contain spaces, so every argument is part of the
+     * target: `cd Υπάλληλος (ΑΦ)` works without quoting (a quoted
+     * target still works, the quotes are stripped by the tokenizer).
+     *
      * @param  list<string>  $args
      */
     protected function cmdCd(array $args): void
@@ -256,7 +306,7 @@ class ShellSession
             return;
         }
 
-        $target = $args[0];
+        $target = implode(' ', $args);
 
         if ($target === '/') {
             $root = Role::query()->whereNull('parent_id')->first();
@@ -533,12 +583,15 @@ class ShellSession
     /**
      * Dispatch `rm role|user|permission <reference>`.
      *
+     * Names may contain spaces, so every argument after the type is
+     * part of the reference.
+     *
      * @param  list<string>  $args
      */
     protected function cmdRm(array $args): void
     {
         $type = strtolower($args[0] ?? '');
-        $reference = $args[1] ?? null;
+        $reference = count($args) > 1 ? implode(' ', array_slice($args, 1)) : null;
 
         if (! in_array($type, ['role', 'user', 'permission'], true) || $reference === null) {
             $this->fail('Usage: rm <role|user|permission> <reference>');
@@ -690,6 +743,9 @@ class ShellSession
      * Move a role under a new parent: `mv <role> <path>`.
      *
      * The target accepts an id, a name or a slash path from the root.
+     * Both arguments may contain spaces, so the reference is the
+     * shortest run of arguments that resolves to an existing role and
+     * everything after it belongs to the target.
      *
      * @param  list<string>  $args
      */
@@ -701,7 +757,13 @@ class ShellSession
             return;
         }
 
-        [$reference, $target] = $args;
+        [$reference, $target] = $this->splitMvArguments($args);
+
+        if ($reference === '' || $target === '') {
+            $this->fail('Usage: mv <role> <path>');
+
+            return;
+        }
 
         $role = $this->resolveRoleOrFail($reference);
 
@@ -760,6 +822,32 @@ class ShellSession
             $parent->id,
             $this->e($parent->name)
         ));
+    }
+
+    /**
+     * Split `mv` arguments into the role reference and the target.
+     *
+     * The reference is the shortest run of arguments that resolves to
+     * an existing role — role names may contain spaces — and whatever
+     * follows it belongs to the target. When no run resolves, the first
+     * argument is used as the reference so the error names what was
+     * typed. The target may be empty; the caller reports the usage.
+     *
+     * @param  list<string>  $args
+     * @return array{string, string}
+     */
+    protected function splitMvArguments(array $args): array
+    {
+        $used = $this->roleReferenceLength($args);
+
+        if ($used === 0) {
+            $used = 1;
+        }
+
+        return [
+            implode(' ', array_slice($args, 0, $used)),
+            implode(' ', array_slice($args, $used)),
+        ];
     }
 
     protected function cmdHelp(): void
