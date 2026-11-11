@@ -364,7 +364,6 @@ class ShellSession
         }
 
         $this->info(sprintf('Role #%d "%s" created.', $role->id, $this->e($role->name)));
-        $this->cmdLs();
     }
 
     protected function addPermission(bool $new): void
@@ -419,7 +418,6 @@ class ShellSession
                 $role->id,
                 $this->e($role->name)
             ));
-            $this->cmdLs();
 
             return;
         }
@@ -470,7 +468,6 @@ class ShellSession
             $role->id,
             $this->e($role->name)
         ));
-        $this->cmdLs();
     }
 
     protected function addUser(): void
@@ -531,7 +528,6 @@ class ShellSession
             $this->e($role->name),
             count($selected)
         ));
-        $this->cmdLs();
     }
 
     /**
@@ -609,7 +605,6 @@ class ShellSession
         }
 
         $this->info(sprintf('Role #%d "%s" deleted.', $id, $this->e($name)));
-        $this->cmdLs();
     }
 
     protected function rmUser(string $reference): void
@@ -649,7 +644,6 @@ class ShellSession
             $role->id,
             $this->e($role->name)
         ));
-        $this->cmdLs();
     }
 
     protected function rmPermission(string $reference): void
@@ -690,7 +684,6 @@ class ShellSession
             $role->id,
             $this->e($role->name)
         ));
-        $this->cmdLs();
     }
 
     /**
@@ -767,7 +760,6 @@ class ShellSession
             $parent->id,
             $this->e($parent->name)
         ));
-        $this->cmdLs();
     }
 
     protected function cmdHelp(): void
